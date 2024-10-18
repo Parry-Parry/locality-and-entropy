@@ -1,6 +1,4 @@
 import pyterrier as pt 
-if not pt.started():
-    pt.init()
 from rankers import Dot, RankerTrainer, RankerArguments, DotDataCollator, seed_everything, CatDataCollator, Cat, TrainingDataset
 from torch.optim import AdamW
 from transformers import get_linear_schedule_with_warmup
