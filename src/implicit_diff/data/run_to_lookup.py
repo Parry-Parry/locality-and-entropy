@@ -1,5 +1,4 @@
 import pyterrier as pt 
-if not pt.started(): pt.init()
 from fire import Fire
 from collections import defaultdict
 import json
