@@ -156,3 +156,5 @@ cython_debug/
 
 # Other
 data/
+src/implicit_diff/data/
+src/implicit_diff/checkpoints/

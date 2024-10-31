@@ -1,5 +1,5 @@
 OUTPUT_DIR = 'sigir25-implicit-diff/data'
-CHECKPOINT = 'checkpoints/crossencoder'
+CHECKPOINT = 'sigir25-implicit-diff/checkpoints/crossencoder'
 DATASET = "msmarco-passage/train/triples-small"
 # Create output directory
 mkdir -p $OUTPUT_DIR
