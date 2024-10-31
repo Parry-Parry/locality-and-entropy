@@ -31,7 +31,6 @@ def train(model_name_or_path : str,
           listwise : bool = False,
           cat : bool = False,
           resume_from_checkpoint : bool = False,
-          covid : bool = False
           ):
     os.makedirs(output_dir, exist_ok=True)
     seed_everything(seed)
@@ -56,9 +55,7 @@ def train(model_name_or_path : str,
     triples = pd.read_json(triple_file, lines=True, orient='records')
     logging.info(f"Instantiating dataset...")
 
-    dataset = TrainingDataset(triples, teacher_file, group_size, listwise=listwise, covid=covid)
-
-    print(dataset.labels)
+    dataset = TrainingDataset(triples, teacher_file, group_size, listwise=listwise)
 
     callbacks = []
 
