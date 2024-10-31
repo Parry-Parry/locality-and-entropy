@@ -46,8 +46,8 @@ def mine(file,
          depth : int = 200,
          subset : int = -1,
          batch_size : int = 512,
-         n_neg : int = 1,
-         n_negs : list = None,
+         n_neg : int = None,
+         n_negs : list = [1, 7, 15, 31],
          cache : str = None,
          ):
     logging.info(f"Index: {index_path}")
@@ -83,7 +83,7 @@ def mine(file,
     for qid, val in res.items():
         tmp_res[qid] = val 
 
-    if n_negs is None: n_negs = [n_neg]
+    if n_neg is not None: n_negs = [n_neg]
     lookup = defaultdict(dict)
     for n_neg in n_negs:
         negs = {qid : random.sample(tmp_res[qid], k=depth) if len(tmp_res[qid]) >= depth else tmp_res[qid] for qid in list(triples.query_id.unique())}
