@@ -33,7 +33,7 @@ def load_run(system_name, dataset_id, trec_file = None):
     from tira.rest_api_client import Client
     if trec_file:
         return pt.io.read_results(trec_file)
-    trec_file = f'data/runs/{dataset_id.replace("/", "-")}-{system_name}.run.gz'
+    trec_file = f'data/{dataset_id.replace("/", "-")}-{system_name}.run.gz'
 
     if dataset_id == 'msmarco-passage/trec-dl-2020/judged':
         dataset_shortcut = 'dl20'
@@ -89,7 +89,7 @@ def run_topics(ir_dataset : str,
     else:
         index = pt.IndexFactory.of(index, memory=True)
         model = pt.text.get_text(index, text_field) >> model
-
+    print(topics_or_res.head())
     res = model.transform(topics_or_res)
     pt.io.write_results(res, out_path)
 

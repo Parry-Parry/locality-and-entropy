@@ -1,8 +1,9 @@
-from rankers.training.loss import BaseLoss
+from rankers.training.loss import BaseLoss, register_loss
 from torch import Tensor
 import torch
 import torch.nn.functional as F
 
+@register_loss("onesided_margin_mse")
 class OneSidedMarginMSELoss(BaseLoss):
     """Margin MSE loss with residual calculation."""
 

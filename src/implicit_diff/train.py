@@ -1,11 +1,9 @@
-import pyterrier as pt 
 from rankers import Dot, RankerTrainer, RankerArguments, DotDataCollator, seed_everything, CatDataCollator, Cat, TrainingDataset
 from torch.optim import AdamW
-from transformers import get_linear_schedule_with_warmup
+from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 import pandas as pd
 import wandb
 from fire import Fire
-from transformers import AutoTokenizer
 import logging
 import os
 
@@ -33,6 +31,7 @@ def train(model_name_or_path : str,
           listwise : bool = False,
           cat : bool = False,
           resume_from_checkpoint : bool = False,
+          covid : bool = False
           ):
     os.makedirs(output_dir, exist_ok=True)
     seed_everything(seed)
@@ -44,7 +43,9 @@ def train(model_name_or_path : str,
 
     logging.info(f"Loading {model_name_or_path}...")
 
-    model_args = {}
+    model_args = {
+        
+    }
     if not cat: model_args['inbatch_loss'] = inbatch_loss
 
     model = model_constructor.from_pretrained(model_name_or_path, **model_args)
@@ -55,7 +56,10 @@ def train(model_name_or_path : str,
     triples = pd.read_json(triple_file, lines=True, orient='records')
     logging.info(f"Instantiating dataset...")
 
-    dataset = TrainingDataset(triples, teacher_file, group_size, listwise=listwise)
+    dataset = TrainingDataset(triples, teacher_file, group_size, listwise=listwise, covid=covid)
+
+    print(dataset.labels)
+
     callbacks = []
 
     args = RankerArguments(
