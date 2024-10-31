@@ -4,11 +4,11 @@ DATASET = "msmarco-passage/train/triples-small"
 # Create output directory
 mkdir -p $OUTPUT_DIR
 
-python -m implicit.data.get_triples \
+python -m implicit.data_processing.get_triples \
     --dataset $DATASET \
     --out_file "${OUTPUT_DIR}/triples.tsv.gz"
 
-python -m implicit.data.mine_negatives \
+python -m implicit.data_processing.mine_negatives \
     --file "${OUTPUT_DIR}/triples.tsv.gz" \
     --output_dir $OUTPUT_DIR \
     --model_name_or_path $CHECKPOINT \
