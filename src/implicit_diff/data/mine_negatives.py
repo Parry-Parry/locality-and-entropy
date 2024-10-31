@@ -30,8 +30,8 @@ def load_crossencoder(model_name_or_path : str, batch_size : int = 512, verbose 
 
 def mine(file,
          dataset : str,
-         index_path : str, 
          out_dir : str, 
+         index_path : str = None, 
          model_name_or_path : str = None,
          subset_depth : int = 100,
          threads : int = 4, 
@@ -46,6 +46,7 @@ def mine(file,
     logging.info(f"Index: {index_path}")
     logging.info(f"Output Directory: {out_dir}")
     logging.info("Loading model...")
+    if index_path is None: index_path = 'msmarco-passage'
     model = bm25(index_path, threads=threads)
     model = model % depth
 
