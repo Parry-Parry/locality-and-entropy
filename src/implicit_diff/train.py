@@ -42,9 +42,7 @@ def train(model_name_or_path : str,
 
     logging.info(f"Loading {model_name_or_path}...")
 
-    model_args = {
-        
-    }
+    model_args = {}
     if not cat: model_args['inbatch_loss'] = inbatch_loss
 
     model = model_constructor.from_pretrained(model_name_or_path, **model_args)
