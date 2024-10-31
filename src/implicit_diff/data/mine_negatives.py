@@ -29,7 +29,6 @@ def load_crossencoder(model_name_or_path : str, batch_size : int = 512, verbose 
     model = CatTransformer.from_pretrained(model_name_or_path, batch_size=batch_size, verbose=verbose)
     if cache is not None:
         cached_scorer = ScorerCache(cache, model)
-        
         if not cached_scorer.built():
             dataset = pt.get_dataset('irds:msmarco-passage')
             cached_scorer.build(dataset.docs_iter())
@@ -47,7 +46,7 @@ def mine(file,
          subset : int = -1,
          batch_size : int = 512,
          n_neg : int = None,
-         n_negs : list = [1, 7, 15, 31],
+         n_negs : list = [31, 15, 7, 1],
          cache : str = None,
          ):
     logging.info(f"Index: {index_path}")
