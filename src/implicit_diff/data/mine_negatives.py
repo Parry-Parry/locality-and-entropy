@@ -41,12 +41,12 @@ def mine(file,
          n_neg : int = 1,
          n_negs : list = None,
          cache : str = None,
-         name : str = 'standard'
          ):
     logging.info(f"Index: {index_path}")
     logging.info(f"Output Directory: {out_dir}")
     logging.info("Loading model...")
     if index_path is None: index_path = 'msmarco-passage'
+    name = model_name_or_path.replace("/", "-") if model_name_or_path else 'bm25'
     model = bm25(index_path, threads=threads)
     model = model % depth
 
@@ -145,7 +145,6 @@ def mine(file,
 
             res = res.groupby('qid')['docno'].apply(list).reset_index().set_index('qid')['docno'].to_dict()
             negs = {str(qid) : random.sample(res[qid], k=n_neg) for qid in res.keys()}
-        
             triples['doc_id_b'] = triples['query_id'].map(lambda x: negs[str(x)])
             triples.to_json(out_dir + f'/{name}.{group_size}.triples.jsonl.gz', orient='records', lines=True)
 
