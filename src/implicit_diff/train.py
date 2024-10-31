@@ -32,6 +32,8 @@ def train(model_name_or_path : str,
           cat : bool = False,
           resume_from_checkpoint : bool = False,
           ):
+    formatted_output = f"{model_name_or_path}-{loss_fn}-{'cat' if cat else 'dot'}-{'listwise' if listwise else 'pairwise'}-{group_size}-{batch_size}-{gradient_accumulation_steps}-seed{seed}"
+    output_dir = os.path.join(output_dir, formatted_output)
     os.makedirs(output_dir, exist_ok=True)
     seed_everything(seed)
     if wandb_project is not None:

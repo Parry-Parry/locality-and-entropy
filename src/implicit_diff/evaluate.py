@@ -25,8 +25,6 @@ def main(eval : str, run_dir : str, out_dir : str, rel : int = 1, filter : bool 
             runs.append(run)
             names.append(name)
     assert baseline_run is not None, f"Baseline {baseline} not found!"
-    # prepend the baseline run
-    print(runs)
     runs = [baseline_run] + runs
     names = [baseline] + names
 
