@@ -1,0 +1,1 @@
+OUTPUT_DIR = 'sigir25-implicit-diff/data'

@@ -1,14 +1,16 @@
 from collections import defaultdict
-import json
 from fire import Fire
 import ir_datasets as irds
 import pandas as pd
 import pyterrier as pt
+from pyterrier
 from tqdm import tqdm
 if not pt.started(): pt.init()
 import logging
 import os
 import random
+from pyterrier_caching import ScorerCache
+from ..util import run2lookup, save_json
 
 def bm25(index_dir : str, k1 : float = 1.2, b : float = 0.75, threads : int = 1, **kwargs):
     import pyterrier as pt 
@@ -17,16 +19,22 @@ def bm25(index_dir : str, k1 : float = 1.2, b : float = 0.75, threads : int = 1,
 
     if os.path.exists(index_dir):
         logging.info(f"Loading index from {index_dir}")
-
         return PisaIndex(index_dir, threads=threads, **kwargs).bm25(k1=k1, b=b, verbose=True)
-    
     else:
         logging.info("assuming pre-built index")
         return PisaIndex.from_dataset(index_dir, threads=threads, **kwargs).bm25(k1=k1, b=b, verbose=True)
 
-def load_crossencoder(model_name_or_path : str, batch_size : int = 512, verbose : bool = True):
+def load_crossencoder(model_name_or_path : str, batch_size : int = 512, verbose : bool = True, cache : str = None):
     from rankers import CatTransformer
-    return CatTransformer.from_pretrained(model_name_or_path, batch_size=batch_size, verbose=verbose)
+    model = CatTransformer.from_pretrained(model_name_or_path, batch_size=batch_size, verbose=verbose)
+    if cache is not None:
+        cached_scorer = ScorerCache(cache, model)
+        
+        if not cached_scorer.built():
+            dataset = pt.get_dataset('irds:msmarco-passage')
+            cached_scorer.build(dataset.docs_iter())
+        return cached_scorer
+    return model
 
 def mine(file,
          dataset : str,
@@ -68,12 +76,15 @@ def mine(file,
     if subset > 0: frame = frame.sample(subset)
     res = model.transform(frame)
     res = res.groupby('qid')['docno'].apply(list).reset_index().set_index('qid')['docno'].to_dict()
+
+    save_json(run2lookup(res), out_dir + '/bm25.scores.json.gz')
+
     tmp_res = defaultdict(list)
     for qid, val in res.items():
         tmp_res[qid] = val 
 
     if n_negs is None: n_negs = [n_neg]
-
+    lookup = defaultdict(dict)
     for n_neg in n_negs:
         negs = {qid : random.sample(tmp_res[qid], k=depth) if len(tmp_res[qid]) >= depth else tmp_res[qid] for qid in list(triples.query_id.unique())}
         negs_not_enough = [qid for qid in negs.keys() if len(negs[qid]) < depth]
@@ -124,30 +135,22 @@ def mine(file,
 
         if model_name_or_path:
             logging.info("Loading crossencoder...")
-            crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size) % subset_depth
-            if cache is not None:
-                from pyterrier_caching import ScorerCache
-                crossencoder = ScorerCache(cache, crossencoder)
-
-                if not crossencoder.built():
-                    crossencoder.build(dataset.docs_iter())
+            crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache) % subset_depth
             frame = pivot_negs(negs)
             logging.info(f"Getting teacher scores for {len(frame)} pairs...")
-            lookup = defaultdict(dict)
+            
             # get length of lookup and cut frame 
             res = crossencoder.transform(frame)
             
             for row in tqdm(res.itertuples()):
                 lookup[row.qid][row.docno] = row.score
             
-            with open(out_dir + '/teacher_scores.json', 'w') as f:
-                json.dump(lookup, f)
-
             res = res.groupby('qid')['docno'].apply(list).reset_index().set_index('qid')['docno'].to_dict()
             negs = {str(qid) : random.sample(res[qid], k=n_neg) for qid in res.keys()}
             triples['doc_id_b'] = triples['query_id'].map(lambda x: negs[str(x)])
             triples.to_json(out_dir + f'/{name}.{group_size}.triples.jsonl.gz', orient='records', lines=True)
-
+        
+    save_json(lookup, out_dir + f'/{name}.scores.json.gz')
 
     return f"Successfully saved to {out_dir}"
 
