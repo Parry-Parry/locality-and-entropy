@@ -3,7 +3,6 @@ from fire import Fire
 import ir_datasets as irds
 import pandas as pd
 import pyterrier as pt
-from pyterrier
 from tqdm import tqdm
 if not pt.started(): pt.init()
 import logging
