@@ -1,4 +1,4 @@
-from rankers.training.loss import BaseLoss, register_loss
+from rankers.train.loss import BaseLoss, register_loss
 from torch import Tensor
 import torch
 import torch.nn.functional as F
