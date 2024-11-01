@@ -51,7 +51,7 @@ def mine(file,
     logging.info(f"Index: {index_path}")
     logging.info(f"Output Directory: {out_dir}")
     logging.info("Loading model...")
-    if index_path is None: index_path = 'msmarco-passage'
+    if index_path is None: index_path = 'msmarco_passage'
     name = model_name_or_path.replace("/", "-") if model_name_or_path else 'bm25'
     model = bm25(index_path, threads=threads)
     model = model % depth
