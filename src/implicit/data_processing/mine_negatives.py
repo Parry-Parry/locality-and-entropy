@@ -72,10 +72,12 @@ def mine(file,
         'query': res['query_id'].map(lambda x: query_lookup[str(x)]).to_list(),
     })
     if subset > 0: frame = frame.sample(subset)
+        
     res = model.transform(frame)
     res = res.groupby('qid')['docno'].apply(list).reset_index().set_index('qid')['docno'].to_dict()
 
     save_json(run2lookup(res), out_dir + '/bm25.scores.json.gz')
+
 
     tmp_res = defaultdict(list)
     for qid, val in res.items():
