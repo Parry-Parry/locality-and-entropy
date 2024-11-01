@@ -7,7 +7,7 @@ def get_triples(dataset : str, out_file : str, subset : int = -1):
     triples = pd.DataFrame(irdataset.docpairs_iter())
     if subset > 0:
         triples = triples.sample(subset)
-    triples.to_csv(out_file, sep='\t', index=False)
+    triples.to_json(out_file, orient='records', lines=True)
 
     return f"Saved {len(triples)} triples of {dataset} to {out_file}"
 
