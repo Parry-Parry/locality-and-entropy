@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-package_name = 'implicit_diff'
+package_name = 'implicit'
 
 setup(
     name=package_name,  # The name of your package
