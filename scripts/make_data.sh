@@ -12,6 +12,7 @@ python sigir25-implicit-diff/src/implicit/data_processing/get_triples.py \
 # Mine negatives
 python sigir25-implicit-diff/src/implicit/data_processing/mine_negatives.py \
     --file "${OUTPUT_DIR}/triples.tsv.gz" \
+    --dataset $DATASET \
     --output_dir $OUTPUT_DIR \
     --model_name_or_path $CHECKPOINT \
     --cache "${OUTPUT_DIR}/crossencoder-cache"
