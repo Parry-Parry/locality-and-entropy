@@ -9,7 +9,7 @@ import logging
 import os
 import random
 from pyterrier_caching import ScorerCache
-from ..util import run2lookup, save_json
+from implicit.util import run2lookup, save_json
 
 def bm25(index_dir : str, k1 : float = 1.2, b : float = 0.75, threads : int = 1, **kwargs):
     import pyterrier as pt 
