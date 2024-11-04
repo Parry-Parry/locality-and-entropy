@@ -30,7 +30,7 @@ def load_crossencoder(model_name_or_path : str, batch_size : int = 512, verbose 
         cached_scorer = ScorerCache(cache, model)
         if not cached_scorer.built():
             dataset = pt.get_dataset('irds:msmarco-passage')
-            cached_scorer.build(dataset.docs_iter())
+            cached_scorer.build(dataset.get_corpus_iter())
         return cached_scorer
     return model
 
