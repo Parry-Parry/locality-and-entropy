@@ -83,67 +83,69 @@ def mine(file,
 
     if n_neg is not None: n_negs = [n_neg]
     lookup = defaultdict(dict)
-    for n_neg in n_negs:
-        negs = {qid : random.sample(tmp_res[qid], k=depth) if len(tmp_res[qid]) >= depth else tmp_res[qid] for qid in list(triples.query_id.unique())}
-        negs_not_enough = [qid for qid in negs.keys() if len(negs[qid]) < depth]
-        #negs_not_enough = []
-        # randomly sample from docs where negs are not enough
+    negs = {qid : random.sample(tmp_res[qid], k=depth) if len(tmp_res[qid]) >= depth else tmp_res[qid] for qid in list(triples.query_id.unique())}
+    negs_not_enough = [qid for qid in negs.keys() if len(negs[qid]) < depth]
+    #negs_not_enough = []
+    # randomly sample from docs where negs are not enough
 
-        group_size = n_neg + 1
-
-        for qid in tqdm(negs_not_enough):
-            current = negs[qid]
-            missing = depth - len(current) 
-            negs[qid] = [*current, *random.sample(docs, k=missing)]
-        
-        def pivot_negs(negs):
-            frame = {
-                'qid': [],
-                'docno': [],
-                'query': [],
-                'text': [],
-            }
-            for _qid in tqdm(negs.keys(), desc="Pivoting negatives"):
-                if len(negs[_qid]) < 1: continue
-                qid = str(_qid)
-                try:
-                    query_text = query_lookup[qid]
-                except:
-                    logging.error(f"Query {qid} not found in queries")
-                    continue
-                doc_id_a = str(doc_id_a_lookup[qid])
+    for qid in tqdm(negs_not_enough):
+        current = negs[qid]
+        missing = depth - len(current) 
+        negs[qid] = [*current, *random.sample(docs, k=missing)]
+    
+    def pivot_negs(negs):
+        frame = {
+            'qid': [],
+            'docno': [],
+            'query': [],
+            'text': [],
+        }
+        for _qid in tqdm(negs.keys(), desc="Pivoting negatives"):
+            if len(negs[_qid]) < 1: continue
+            qid = str(_qid)
+            try:
+                query_text = query_lookup[qid]
+            except:
+                logging.error(f"Query {qid} not found in queries")
+                continue
+            doc_id_a = str(doc_id_a_lookup[qid])
+            frame['qid'].append(qid)
+            frame['docno'].append(doc_id_a)
+            frame['text'].append(docs_lookup[doc_id_a])
+            frame['query'].append(query_text)
+            for _doc_id in negs[_qid]:
+                doc_id = str(_doc_id)
                 frame['qid'].append(qid)
-                frame['docno'].append(doc_id_a)
-                frame['text'].append(docs_lookup[doc_id_a])
+                frame['docno'].append(doc_id)
+                frame['text'].append(docs_lookup[doc_id])
                 frame['query'].append(query_text)
-                for _doc_id in negs[_qid]:
-                    doc_id = str(_doc_id)
-                    frame['qid'].append(qid)
-                    frame['docno'].append(doc_id)
-                    frame['text'].append(docs_lookup[doc_id])
-                    frame['query'].append(query_text)
-            frame['score'] = [0.0] * len(frame['qid'])
-            return pd.DataFrame(frame).drop_duplicates(subset=['qid', 'docno'])
-        
-        cut_negs = {qid: negs[qid][:subset_depth] for qid in negs.keys()}
-        cut_negs = {str(qid): random.sample(cut_negs[qid], k=n_neg) for qid in cut_negs.keys()}
-        cut_triples = triples.copy()
+        frame['score'] = [0.0] * len(frame['qid'])
+        return pd.DataFrame(frame).drop_duplicates(subset=['qid', 'docno'])
+    
+    
+    cut_negs = {qid: negs[qid][:subset_depth] for qid in negs.keys()}
+    cut_negs = {str(qid): random.sample(cut_negs[qid], k=n_neg) for qid in cut_negs.keys()}
+    cut_triples = triples.copy()
+    for n_neg in n_negs:
+        group_size = n_neg + 1
         cut_triples['doc_id_b'] = cut_triples['query_id'].map(lambda x: cut_negs[str(x)])
         cut_triples.to_json(out_dir + f'/bm25.{group_size}.jsonl.gz', orient='records', lines=True)
 
-        if model_name_or_path:
-            logging.info("Loading crossencoder...")
-            crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache) % subset_depth
-            frame = pivot_negs(negs)
-            logging.info(f"Getting teacher scores for {len(frame)} pairs...")
-            
-            # get length of lookup and cut frame 
-            res = crossencoder.transform(frame)
-            
-            for row in tqdm(res.itertuples()):
-                lookup[row.qid][row.docno] = row.score
-            
-            res = res.groupby('qid')['docno'].apply(list).reset_index().set_index('qid')['docno'].to_dict()
+    if model_name_or_path:
+        logging.info("Loading crossencoder...")
+        crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache) % subset_depth
+        frame = pivot_negs(negs)
+        logging.info(f"Getting teacher scores for {len(frame)} pairs...")
+        
+        # get length of lookup and cut frame 
+        res = crossencoder.transform(frame)
+        
+        for row in tqdm(res.itertuples()):
+            lookup[row.qid][row.docno] = row.score
+        
+        res = res.groupby('qid')['docno'].apply(list).reset_index().set_index('qid')['docno'].to_dict()
+        for n_neg in n_negs:
+            group_size = n_neg + 1
             negs = {str(qid) : random.sample(res[qid], k=n_neg) for qid in res.keys()}
             triples['doc_id_b'] = triples['query_id'].map(lambda x: negs[str(x)])
             triples.to_json(out_dir + f'/{name}.{group_size}.triples.jsonl.gz', orient='records', lines=True)
