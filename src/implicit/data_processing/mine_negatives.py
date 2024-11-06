@@ -45,7 +45,7 @@ def mine(file,
          subset : int = -1,
          batch_size : int = 512,
          n_neg : int = None,
-         n_negs : list = [31, 15, 7, 1],
+         n_negs : list = [15, 7, 1],
          cache : str = None,
          ):
     logging.info(f"Index: {index_path}")
