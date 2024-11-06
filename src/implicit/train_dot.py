@@ -31,7 +31,6 @@ def main():
         train_dataset=dataset,
         data_collator=collate_fn,
         optimizers=(opt, get_constant_schedule_with_warmup(opt, training_args.warmup_steps)),
-        loss_fn = "contrastive",
         )
     
     trainer.train()
