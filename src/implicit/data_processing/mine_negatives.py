@@ -122,13 +122,13 @@ def mine(file,
         frame['score'] = [0.0] * len(frame['qid'])
         return pd.DataFrame(frame).drop_duplicates(subset=['qid', 'docno'])
     
-    
     cut_negs = {qid: negs[qid][:subset_depth] for qid in negs.keys()}
-    cut_negs = {str(qid): random.sample(cut_negs[qid], k=n_neg) for qid in cut_negs.keys()}
-    cut_triples = triples.copy()
+    
     for n_neg in n_negs:
+        _cut_negs = {str(qid): random.sample(cut_negs[qid], k=n_neg) for qid in cut_negs.keys()}
+        cut_triples = triples.copy()
         group_size = n_neg + 1
-        cut_triples['doc_id_b'] = cut_triples['query_id'].map(lambda x: cut_negs[str(x)])
+        cut_triples['doc_id_b'] = cut_triples['query_id'].map(lambda x: _cut_negs[str(x)])
         cut_triples.to_json(out_dir + f'/bm25.{group_size}.jsonl.gz', orient='records', lines=True)
 
     if model_name_or_path:
