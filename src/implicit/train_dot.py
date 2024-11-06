@@ -1,32 +1,28 @@
 from rankers import ( 
                       RankerTrainingArguments, 
-                      RankerDotArguments,
+                      RankerModelArguments,
                       RankerDataArguments,
                       RankerTrainer, 
                       Dot,
-                      DotConfig,
+                      TrainingDataset,
                       DotDataCollator,
-                      TrainingDataset
                       )
-from transformers import HfArgumentParser
-from transformers import get_constant_schedule_with_warmup
+from transformers import HfArgumentParser, get_constant_schedule_with_warmup
 from torch.optim import AdamW
-import wandb
 
 def main():
-    parser = HfArgumentParser((RankerDotArguments, RankerDataArguments, RankerTrainingArguments))
+    parser = HfArgumentParser((RankerModelArguments, RankerDataArguments, RankerTrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    if training_args.wandb_project is not None:
-        wandb.init(project=training_args.wandb_project,)
+    formatted_model_name = model_args.model_name_or_path.replace('/', '-')
+    training_args.output_dir = training_args.output_dir + f'/dot-{formatted_model_name}-{training_args.loss_fn.name}'
     
-    model_config = DotConfig.from_pretrained(model_args.model_name_or_path, pooling_type=model_args.pooling_type, model_tied=model_args.model_tied, use_pooler=model_args.use_pooler)
-    model = Dot.from_pretrained(model_args.model_name_or_path, config=model_config)
+    model = Dot.from_pretrained(model_args.model_name_or_path)
 
-    dataset = TrainingDataset(data_args.training_data, ir_dataset=data_args.ir_dataset)
+    dataset = TrainingDataset(data_args.training_data, corpus=data_args.ir_dataset, use_positive=data_args.use_positive)
     collate_fn = DotDataCollator(model.tokenizer)
 
-    opt = AdamW(model.parameters(), lr=training_args.lr)
+    opt = AdamW(model.parameters(), lr=training_args.learning_rate)
 
     trainer = RankerTrainer(
         model=model,
