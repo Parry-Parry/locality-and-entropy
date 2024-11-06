@@ -15,7 +15,8 @@ def main():
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     formatted_model_name = model_args.model_name_or_path.replace('/', '-')
-    training_args.output_dir = training_args.output_dir + f'/dot-{formatted_model_name}-{training_args.loss_fn.name}'
+    distilled = "distilled" if data_args.teacher_file is not None else "first"
+    training_args.output_dir = training_args.output_dir + f'/dot-{formatted_model_name}-{training_args.loss_fn.name}-{training_args.group_size}-{distilled}'
     
     model = Dot.from_pretrained(model_args.model_name_or_path)
 
