@@ -19,12 +19,12 @@ CMD="python -m implicit.train \
 --output_dir $OUTPUT_DIR \
 --wandb_project $WANDB_PROJECT \
 --warmup_ratio $WARMUP_RATIO \
---lr $LR \
+--learning_rate $LR \
 --save_total_limit $SAVE_LIMIT \
 --loss_fn $LOSS \
---triple_file $TRIPLE_FILE \
+--training_dataset_file $TRIPLE_FILE \
 --group_size $GROUP_SIZE \
---batch_size $BATCH_SIZE \
+--per_device_batch_size $BATCH_SIZE \
 --gradient_accumulation_steps $GRAD_ACCUM \
 --fp16 \
 --cat"
