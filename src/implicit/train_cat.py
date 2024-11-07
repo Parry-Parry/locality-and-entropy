@@ -16,7 +16,7 @@ def main():
     
     formatted_model_name = model_args.model_name_or_path.replace('/', '-')
     distilled = "distilled" if data_args.teacher_file is not None else "first"
-    training_args.output_dir = training_args.output_dir + f'/dot-{formatted_model_name}-{training_args.loss_fn.name}-{training_args.group_size}-{distilled}'
+    training_args.output_dir = training_args.output_dir + f'/cat-{formatted_model_name}-{training_args.loss_fn.name}-{training_args.group_size}-{distilled}'
 
     model = Cat.from_pretrained(model_args.model_name_or_path)
 
