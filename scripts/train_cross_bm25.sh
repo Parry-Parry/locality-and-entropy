@@ -26,6 +26,7 @@ CMD="python -m implicit.train_cat \
 --group_size $GROUP_SIZE \
 --per_device_train_batch_size $BATCH_SIZE \
 --gradient_accumulation_steps $GRAD_ACCUM \
+--ir_dataset "msmarco-passage/train/triples-small" \
 --fp16"
 
 # Add teacher file argument only if it's defined
