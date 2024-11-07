@@ -14,7 +14,7 @@ GRAD_ACCUM=$3
 TEACHER_FILE=$4
 
 # Build base command
-CMD="python -m implicit.train \
+CMD="python -m implicit.train_cat \
 --model_name_or_path $MODEL_NAME \
 --output_dir $OUTPUT_DIR \
 --wandb_project $WANDB_PROJECT \
@@ -26,8 +26,7 @@ CMD="python -m implicit.train \
 --group_size $GROUP_SIZE \
 --per_device_batch_size $BATCH_SIZE \
 --gradient_accumulation_steps $GRAD_ACCUM \
---fp16 \
---cat"
+--fp16"
 
 # Add teacher file argument only if it's defined
 if [ ! -z "$TEACHER_FILE" ]; then
