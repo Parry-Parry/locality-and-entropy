@@ -31,10 +31,11 @@ def main():
         train_dataset=dataset,
         data_collator=collate_fn,
         optimizers=(opt, get_constant_schedule_with_warmup(opt, training_args.warmup_steps)),
+        loss_fn = training_args.loss_fn,
         )
     
     trainer.train()
-    trainer.save_model(training_args.output_dir + "/model")
+    trainer.save_model(training_args.output_dir)
 
 if __name__ == '__main__':
     main()
