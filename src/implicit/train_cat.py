@@ -14,8 +14,6 @@ def main():
     parser = HfArgumentParser((RankerModelArguments, RankerDataArguments, RankerTrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     
-    print(training_args)
-
     formatted_model_name = model_args.model_name_or_path.replace('/', '-')
     distilled = "distilled" if data_args.teacher_file is not None else "first"
     training_args.output_dir = training_args.output_dir + f'/cat-{formatted_model_name}-{training_args.loss_fn.name}-{training_args.group_size}-{distilled}'
