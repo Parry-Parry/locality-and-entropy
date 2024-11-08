@@ -16,4 +16,4 @@ python sigir25-implicit-diff/src/implicit/data_processing/mine_negatives.py \
     --depth 10000 \
     --out_dir $OUTPUT_DIR \
     --model_name_or_path $CHECKPOINT \
-    --random  
+    --use_random  
