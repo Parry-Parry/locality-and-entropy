@@ -7,7 +7,7 @@ FP16=true
 SAVE_LIMIT=1
 LOSS='lce'
 GROUP_SIZE=$1
-TRIPLE_FILE="data/bm25.${GROUP_SIZE}.jsonl.gz"
+TRIPLE_FILE="data/bm25.${GROUP_SIZE}.jsonl"
 BATCH_SIZE=$2
 GRAD_ACCUM=$3
 # optional teacher file is now last argument
