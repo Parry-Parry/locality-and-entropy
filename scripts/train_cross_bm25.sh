@@ -27,7 +27,8 @@ CMD="python -m implicit.train_cat \
 --per_device_train_batch_size $BATCH_SIZE \
 --gradient_accumulation_steps $GRAD_ACCUM \
 --ir_dataset "msmarco-passage/train/triples-small" \
---fp16 t"
+--fp16 t
+--report_to wandb"
 
 # Add teacher file argument only if it's defined
 if [ ! -z "$TEACHER_FILE" ]; then
