@@ -46,7 +46,7 @@ def mine(file,
          batch_size : int = 512,
          n_neg : int = None,
          n_negs : list = [15, 7, 1],
-         random : bool = False,
+         use_random : bool = False,
          cache : str = None,
          ):
     logging.info(f"Index: {index_path}")
@@ -135,7 +135,7 @@ def mine(file,
     if model_name_or_path:
         logging.info("Loading crossencoder...")
         crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache) % subset_depth
-        if random: negs = {qid : random.sample(negs[qid], k=subset_depth) for qid in negs.keys()}
+        if use_random: negs = {qid : random.sample(negs[qid], k=subset_depth) for qid in negs.keys()}
         frame = pivot_negs(negs)
         logging.info(f"Getting teacher scores for {len(frame)} pairs...")
         
