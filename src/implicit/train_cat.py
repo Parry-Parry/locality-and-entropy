@@ -31,7 +31,7 @@ def main():
         args=training_args,
         train_dataset=dataset,
         data_collator=collate_fn,
-        optimizers=(opt, get_constant_schedule_with_warmup(opt, training_args.warmup_steps)),
+        optimizers=(opt, get_constant_schedule_with_warmup(opt, training_args.get_warmup_steps())),
         loss_fn = training_args.loss_fn,
         )
     
