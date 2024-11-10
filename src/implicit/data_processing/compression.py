@@ -23,13 +23,13 @@ def decompress(file : str, delete : bool = False):
     else:
         pass
 
-def main(directory : str, mode : str = 'decompress', delete : bool = False, file_type : str = 'jsonl'):
+def main(directory : str, mode : str = 'decompress', delete : bool = False, file_type : str = 'jsonl', file : str = None):
     if mode == 'compress':
-        files = glob.glob(directory + f'/*.{file_type}')
+        files = glob.glob(directory + f'/*.{file_type}') if file is None else [file]
         for file in files:
             compress(file, delete)
     elif mode == 'decompress':
-        files = glob.glob(directory + f'/*.{file_type}.gz')
+        files = glob.glob(directory + f'/*.{file_type}.gz') if file is None else [file]
         for file in files:
             decompress(file, delete)
     else:
