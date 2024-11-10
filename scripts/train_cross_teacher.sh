@@ -10,8 +10,9 @@ GROUP_SIZE=$1
 TRIPLE_FILE="data/crossencoder.${GROUP_SIZE}.jsonl"
 BATCH_SIZE=$2
 GRAD_ACCUM=$3
+MAX_STEPS=$4
 # optional teacher file is now last argument
-TEACHER_FILE=$4
+TEACHER_FILE=$5
 
 # Build base command
 CMD="python -m implicit.train_cat \
@@ -29,6 +30,11 @@ CMD="python -m implicit.train_cat \
 --ir_dataset "msmarco-passage/train/triples-small" \
 --fp16 t
 --report_to wandb"
+
+# Add max steps argument only if it's defined
+if [ ! -z "$MAX_STEPS" ]; then
+    CMD="$CMD --max_steps $MAX_STEPS"
+fi
 
 # Add teacher file argument only if it's defined
 if [ ! -z "$TEACHER_FILE" ]; then
