@@ -1,6 +1,7 @@
 from fire import Fire
 import pandas as pd
 import os
+import glob
 
 def compress(file : str, delete : bool = False):
     if file.endswith('.jsonl'):
@@ -22,11 +23,15 @@ def decompress(file : str, delete : bool = False):
     else:
         pass
 
-def main(file : str, mode : str = 'decompress', delete : bool = False):
+def main(directory : str, mode : str = 'decompress', delete : bool = False, file_type : str = 'jsonl'):
     if mode == 'compress':
-        compress(file, delete)
+        files = glob.glob(directory + f'/*.{file_type}')
+        for file in files:
+            compress(file, delete)
     elif mode == 'decompress':
-        decompress(file, delete)
+        files = glob.glob(directory + f'/*.{file_type}.gz')
+        for file in files:
+            decompress(file, delete)
     else:
         raise ValueError("Mode must be either 'compress' or 'decompress'")
 
