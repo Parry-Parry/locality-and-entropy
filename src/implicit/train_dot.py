@@ -21,7 +21,7 @@ def main():
     
     model = Dot.from_pretrained(model_args.model_name_or_path)
 
-    dataset = TrainingDataset(data_args.training_data, corpus=data_args.ir_dataset, no_positive=data_args.no_positive)
+    dataset = TrainingDataset(data_args.training_data, corpus=data_args.ir_dataset, no_positive=data_args.no_positive, teacher_file=data_args.teacher_file)
     collate_fn = DotDataCollator(model.tokenizer)
 
     opt = AdamW(model.parameters(), lr=training_args.learning_rate)
