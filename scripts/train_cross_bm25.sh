@@ -5,14 +5,14 @@ WARMUP_RATIO=0.1
 LR=5e-5
 FP16=true
 SAVE_LIMIT=1
-LOSS='lce'
-GROUP_SIZE=$1
+LOSS=$1
+GROUP_SIZE=$2
 TRIPLE_FILE="data/bm25.${GROUP_SIZE}.jsonl"
-BATCH_SIZE=$2
-GRAD_ACCUM=$3
-MAX_STEPS=$4
+BATCH_SIZE=$3
+GRAD_ACCUM=$4
+MAX_STEPS=$5
 # optional teacher file is now last argument
-TEACHER_FILE=$5
+TEACHER_FILE=$6
 
 # Build base command
 CMD="python -m implicit.train_cat \
