@@ -4,7 +4,7 @@ DATASET="msmarco-passage/train/triples-small"
 
 GROUP_SIZE=$1
 MODEL=$2
-FILE=$OUTPUT_DIR/$MODEL.$GROUP_SIZE.triples.jsonl
+FILE=$OUTPUT_DIR/$MODEL.$GROUP_SIZE.jsonl
 
 python -m implicit.data_processing.get_scores \
     --file $FILE \
