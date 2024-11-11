@@ -80,6 +80,10 @@ def mine(file,
     triples = pd.read_json(file, lines=True, orient='records')
     frame = pivot_triples(triples)
 
+    # filter frame to those qid docno pairs not in lookup
+
+    frame = frame.filter(lambda x: x.qid not in lookup or x.docno not in lookup[x.qid]) 
+
 
     logging.info("Loading crossencoder...")
     crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache) 
