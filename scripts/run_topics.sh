@@ -10,6 +10,8 @@ IR_DATASET=$1
 TOPICS_OR_RES=$2
 OVERWRITE=$3
 
+mkdir -p $OUTPUT_DIRECTORY
+
 # Build base command
 CMD="python -m implicit.batch_run_topics \
 --ir_dataset $IR_DATASET \
