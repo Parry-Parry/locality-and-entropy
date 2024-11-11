@@ -63,27 +63,25 @@ def mine(file,
             doc_id_a = str(row.doc_id_a)
             doc_id_b = [str(x) for x in row.doc_id_b] if type(row.doc_id_b) == list else [str(row.doc_id_b)]
             query_text = queries[qid]
-            frame['qid'].append(qid)
-            frame['docno'].append(doc_id_a)
-            frame['text'].append(docs[doc_id_a])
-            frame['query'].append(query_text)
+
+            if doc_id_a not in lookup[qid]:
+                frame['qid'].append(qid)
+                frame['docno'].append(doc_id_a)
+                frame['text'].append(docs[doc_id_a])
+                frame['query'].append(query_text)
 
             for id in doc_id_b:
-                frame['qid'].append(qid)
-                frame['docno'].append(id)
-                frame['text'].append(docs[id])
-                frame['query'].append(query_text)
+                if id not in lookup[qid]:
+                    frame['qid'].append(qid)
+                    frame['docno'].append(id)
+                    frame['text'].append(docs[id])
+                    frame['query'].append(query_text)
                 
         frame['score'] = [0.0] * len(frame['qid'])
         return pd.DataFrame(frame)
 
     triples = pd.read_json(file, lines=True, orient='records')
     frame = pivot_triples(triples)
-
-    # filter frame to those qid docno pairs not in lookup
-
-    frame = frame.filter(lambda x: x.qid not in lookup or x.docno not in lookup[x.qid]) 
-
 
     logging.info("Loading crossencoder...")
     crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache) 
