@@ -6,7 +6,7 @@ for dataset in "${DATASETS[@]}"; do
     # Replace slashes with hyphens in the dataset name
     dataset_hyphenated="${dataset//\//-}"
     
-    python -m contaminate.evaluate \
+    python -m implicit.evaluate \
     --run_dir runs \
     --eval "$dataset" \
     --out_dir "metrics/${dataset_hyphenated}-metrics.tsv.gz" \
