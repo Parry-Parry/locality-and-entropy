@@ -1,29 +1,55 @@
-from rankers import CatTransformer, DotTransformer
-from rankers._util import save_json
 from collections import defaultdict
 from fire import Fire
-import logging
-import pandas as pd
 import ir_datasets as irds
+import pandas as pd
+import pyterrier as pt
 from tqdm import tqdm
+if not pt.started(): pt.init()
+import logging
+import os
+import random
+from pyterrier_caching import ScorerCache
+from implicit.util import run2lookup, save_json, load_json
 
-def get_scores(model_name_or_path : str, 
-               triples_dir : str, 
-               ir_dataset : str, 
-               output_file : str, 
-               batch_size : int = 512, 
-               architecture : str = 'cat',
-               ):
-    if architecture == 'cat':
-        model = CatTransformer.from_pretrained(model_name_or_path, batch_size=batch_size, verbose=True)
-    elif architecture == 'dot':
-        model = DotTransformer.from_pretrained(model_name_or_path, batch_size=batch_size, verbose=True)
+def bm25(index_dir : str, k1 : float = 1.2, b : float = 0.75, threads : int = 1, **kwargs):
+    import pyterrier as pt 
+    if not pt.started(): pt.init()
+    from pyterrier_pisa import PisaIndex
+
+    if os.path.exists(index_dir):
+        logging.info(f"Loading index from {index_dir}")
+        return PisaIndex(index_dir, threads=threads, **kwargs).bm25(k1=k1, b=b, verbose=True)
     else:
-        raise ValueError("Architecture must be either 'cat' or 'dot'")
+        logging.info("assuming pre-built index")
+        return PisaIndex.from_dataset(index_dir, threads=threads, **kwargs).bm25(k1=k1, b=b, verbose=True)
+
+def load_crossencoder(model_name_or_path : str, batch_size : int = 512, verbose : bool = True, cache : str = None):
+    from rankers import CatTransformer
+    model = CatTransformer.from_pretrained(model_name_or_path, batch_size=batch_size, verbose=verbose)
+    if cache is not None:
+        cached_scorer = ScorerCache(cache, model)
+        if not cached_scorer.built():
+            dataset = pt.get_dataset('irds:msmarco-passage')
+            cached_scorer.build(dataset.get_corpus_iter())
+        return cached_scorer
+    return model
+
+
+def mine(file,
+         dataset : str,
+         out_dir : str, 
+         model_name_or_path : str = None,
+         batch_size : int = 512,
+         cache : str = None,
+         ):
     
-    dataset = irds.load(ir_dataset)
+    dataset = irds.load(dataset)
     queries = pd.DataFrame(dataset.queries_iter()).set_index('query_id').text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index('doc_id').text.to_dict()
+    lookup = defaultdict(dict)
+    name = name = model_name_or_path.replace("/", "-")
+    if os.path.exists(out_dir + f'/{name}.scores.json.gz'):
+        lookup = load_json(out_dir + f'/{name}.scores.json.gz')
 
     def pivot_triples(triples):
         frame = {
@@ -51,22 +77,22 @@ def get_scores(model_name_or_path : str,
         frame['score'] = [0.0] * len(frame['qid'])
         return pd.DataFrame(frame)
 
-    triples = pd.read_json(triples_dir, lines=True, orient='records')
+    triples = pd.read_json(file, lines=True, orient='records')
     frame = pivot_triples(triples)
 
-    scores = model.transform(frame)
 
-    lookup = defaultdict(dict)
-
-    for row in scores.itertuples():
+    logging.info("Loading crossencoder...")
+    crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache) 
+    # get length of lookup and cut frame 
+    res = crossencoder.transform(frame)
+    
+    for row in tqdm(res.itertuples()):
         lookup[row.qid][row.docno] = row.score
+    
+    save_json(lookup, out_dir + f'/{name}.scores.json.gz')
 
-    save_json(lookup, output_file)
-
-    return f"Successfully saved scores to {output_file}"
+    return f"Successfully saved to {out_dir}"
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    Fire(get_scores)
-    
-    
+    Fire(mine)
