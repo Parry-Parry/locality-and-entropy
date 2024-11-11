@@ -5,7 +5,7 @@ import pyterrier as pt
 if not pt.started(): pt.init()
 from ir_measures import *
 
-def main(eval : str, run_dir : str, out_dir : str, rel : int = 1, filter : bool = False, baseline : str = "standard_teach"):
+def main(eval : str, run_dir : str, out_dir : str, rel : int = 1, filter : bool = False, baseline : str = None):
     files = [f for f in os.listdir(run_dir) if os.path.isfile(join(run_dir, f))]
     formatted_eval = eval.replace('-', '_').replace('/', '_')
     if filter: files = [f for f in files if formatted_eval in f]
@@ -19,16 +19,14 @@ def main(eval : str, run_dir : str, out_dir : str, rel : int = 1, filter : bool 
             name = file.strip('.res.gz')
             run = pt.transformer.get_transformer(pt.io.read_results(join(run_dir, file)))
             print([name, f'{formatted_eval}_{baseline}'])
-            if name == f'{formatted_eval}_{baseline}':
+            if baseline is not None and name == f'{formatted_eval}_{baseline}':
                 baseline_run = run
                 continue
             runs.append(run)
             names.append(name)
-    assert baseline_run is not None, f"Baseline {baseline} not found!"
-    runs = [baseline_run] + runs
-    names = [baseline] + names
-
-    print(len(runs))
+    if baseline is not None:
+        runs = [baseline_run] + runs
+        names = [baseline] + names
     
     df_eval = pt.Experiment(
             runs,
@@ -36,7 +34,7 @@ def main(eval : str, run_dir : str, out_dir : str, rel : int = 1, filter : bool 
             pt_dataset.get_qrels(),
             eval_metrics=metrics, 
             names=names,
-            baseline=0,
+            baseline=0 if baseline is not None else None
         )
     df_eval.to_csv(out_dir, sep='\t')
             
