@@ -25,13 +25,15 @@ def main():
     collate_fn = CatDataCollator(model.tokenizer)
 
     opt = AdamW(model.parameters(), lr=training_args.learning_rate)
+    
+    num_training_steps = len(dataset) // training_args.per_device_train_batch_size * training_args.num_train_epochs if training_args.max_steps < 1 else training_args.max_steps
 
     trainer = RankerTrainer(
         model=model,
         args=training_args,
         train_dataset=dataset,
         data_collator=collate_fn,
-        optimizers=(opt, get_constant_schedule_with_warmup(opt, training_args.get_warmup_steps())),
+        optimizers=(opt, get_constant_schedule_with_warmup(opt, training_args.get_warmup_steps(num_training_steps))),
         loss_fn = training_args.loss_fn,
         )
     
