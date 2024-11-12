@@ -21,7 +21,7 @@ def main():
     training_args.output_dir = training_args.output_dir + f'/cat-{formatted_model_name}-{training_args.loss_fn.name}-{training_data_file}-{training_args.group_size}-{distilled}'
     model = Cat.from_pretrained(model_args.model_name_or_path)
 
-    dataset = TrainingDataset(data_args.training_dataset_file, corpus=data_args.ir_dataset, no_positive=data_args.no_positive, teacher_file=data_args.teacher_file, lazy_load_text=True)
+    dataset = TrainingDataset(data_args.training_dataset_file, corpus=data_args.ir_dataset, no_positive=data_args.no_positive, teacher_file=data_args.teacher_file, lazy_load_text=False)
     collate_fn = CatDataCollator(model.tokenizer)
 
     opt = AdamW(model.parameters(), lr=training_args.learning_rate)
