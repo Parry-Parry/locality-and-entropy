@@ -5,13 +5,14 @@ WARMUP_RATIO=0.1
 LR=5e-5
 FP16=true
 SAVE_LIMIT=1
-LOSS='lce'
-GROUP_SIZE=$1
-TRIPLE_FILE="data/bm25.${GROUP_SIZE}.jsonl.gz"
-BATCH_SIZE=$2
-GRAD_ACCUM=$3
+LOSS=$1
+GROUP_SIZE=$2
+TRIPLE_FILE="data/bm25.${GROUP_SIZE}.jsonl"
+BATCH_SIZE=$3
+GRAD_ACCUM=$4
 # optional teacher file is now last argument
-TEACHER_FILE=$4
+TEACHER_FILE=$5
+MAX_STEPS=${6:-"-1"}
 
 # Build base command
 CMD="python -m implicit.train_bi \
@@ -27,7 +28,17 @@ CMD="python -m implicit.train_bi \
 --per_device_train_batch_size $BATCH_SIZE \
 --gradient_accumulation_steps $GRAD_ACCUM \
 --ir_dataset "msmarco-passage/train/triples-small" \
---fp16 t"
+--num_train_epochs 1 \
+--logging_steps 1000 \
+--save_steps 100000 \
+--dataloader_num_workers 4 \
+--fp16 t
+--report_to wandb"
+
+# Add max steps argument only if it's defined
+if [ ! -z "$MAX_STEPS" ]; then
+    CMD="$CMD --max_steps $MAX_STEPS"
+fi
 
 # Add teacher file argument only if it's defined
 if [ ! -z "$TEACHER_FILE" ]; then
