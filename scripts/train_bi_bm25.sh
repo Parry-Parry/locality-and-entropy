@@ -15,7 +15,7 @@ TEACHER_FILE=$5
 MAX_STEPS=${6:-"-1"}
 
 # Build base command
-CMD="python -m implicit.train_bi \
+CMD="python -m implicit.train_dot \
 --model_name_or_path $MODEL_NAME \
 --output_dir $OUTPUT_DIR \
 --wandb_project $WANDB_PROJECT \
