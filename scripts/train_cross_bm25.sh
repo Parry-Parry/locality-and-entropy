@@ -28,6 +28,7 @@ CMD="python -m implicit.train_cat \
 --per_device_train_batch_size $BATCH_SIZE \
 --gradient_accumulation_steps $GRAD_ACCUM \
 --ir_dataset "msmarco-passage/train/triples-small" \
+--num_train_epochs 1 \
 --logging_steps 1000 \
 --save_steps 100000 \
 --dataloader_num_workers 4 \
