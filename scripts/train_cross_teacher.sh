@@ -32,8 +32,7 @@ CMD="python -m implicit.train_cat \
 --save_steps 100000 \
 --dataloader_num_workers 4 \
 --fp16 t \
---report_to wandb \ 
---lazy_load_text f"
+--report_to wandb"
 
 # Add max steps argument only if it's defined
 if [ ! -z "$MAX_STEPS" ]; then
