@@ -41,8 +41,9 @@ def mine(file,
          model_name_or_path : str = None,
          batch_size : int = 512,
          cache : str = None,
+         chunk_batches :int = 10000,
          ):
-    
+    chunk_size = chunk_batches * batch_size
     dataset = irds.load(dataset)
     queries = pd.DataFrame(dataset.queries_iter()).set_index('query_id').text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index('doc_id').text.to_dict()
@@ -80,16 +81,15 @@ def mine(file,
         frame['score'] = [0.0] * len(frame['qid'])
         return pd.DataFrame(frame)
 
-    triples = pd.read_json(file, lines=True, orient='records')
-    frame = pivot_triples(triples)
-
+    triples = pd.read_json(file, lines=True, orient='records', chunksize=chunk_size)
     logging.info("Loading crossencoder...")
     crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache) 
-    # get length of lookup and cut frame 
-    res = crossencoder.transform(frame)
-    
-    for row in tqdm(res.itertuples()):
-        lookup[row.qid][row.docno] = row.score
+
+    for group in triples:
+        frame = pivot_triples(group)
+        res = crossencoder.transform(frame)
+        for row in tqdm(res.itertuples()):
+            lookup[row.qid][row.docno] = row.score
     
     save_json(lookup, out_dir + f'/{name}.scores.json.gz')
 
