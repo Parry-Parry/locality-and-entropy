@@ -70,6 +70,8 @@ def run_topics(ir_dataset : str,
                text_field : str = 'text', 
                cat : bool = False,
                overwrite : bool = False):
+    if not os.path.exists(f"{model_name_or_path}/config.json"):
+        return f"Model not found at specified path {model_name_or_path}!"
     if not overwrite and os.path.exists(out_path): return "File already exists!"
     try:
         topics_or_res = pt.io.read_results(topics_or_res) if topics_or_res else load_run('bm25', ir_dataset)
@@ -78,8 +80,6 @@ def run_topics(ir_dataset : str,
     ir_dataset = irds.load(ir_dataset)
     queries = pd.DataFrame(ir_dataset.queries_iter()).set_index('query_id').text.to_dict()
     topics_or_res['query'] = topics_or_res['qid'].map(lambda qid: queries[qid])
-    if not os.path.exists(f"{model_name_or_path}/config.json"):
-        return f"Model not found at specified path {model_name_or_path}!"
     model = load_bi_encoder(model_name_or_path, batch_size=batch_size) if not cat else load_cross_encoder(model_name_or_path, batch_size=batch_size)
 
     if not index: 

@@ -15,7 +15,7 @@ def batch_run_topics(ir_dataset : str,
     for model_name in os.listdir(model_directory):
         model_path = os.path.join(model_directory, model_name)
         out_path = os.path.join(output_directory, f"{formatted_dataset}_{model_name}.res.gz")
-        run_topics(ir_dataset, model_path, out_path, topics_or_res=topics_or_res, batch_size=batch_size, text_field=text_field, overwrite=overwrite, cat='bi' not in model_name)
+        run_topics(ir_dataset, model_path, out_path, topics_or_res=topics_or_res, batch_size=batch_size, text_field=text_field, overwrite=overwrite, cat='dot' not in model_name)
 
     return "Done!"
 
