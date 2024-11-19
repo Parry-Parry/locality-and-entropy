@@ -29,7 +29,7 @@ CMD="python -m implicit.train_cat \
 --gradient_accumulation_steps $GRAD_ACCUM \
 --ir_dataset "msmarco-passage/train/triples-small" \
 --fp16 t \
---report_to wandb t \"
+--report_to wandb t"
 
 # Add max steps argument only if it's defined
 if [ ! -z "$MAX_STEPS" ]; then
