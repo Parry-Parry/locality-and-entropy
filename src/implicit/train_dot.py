@@ -14,13 +14,15 @@ def main():
     parser = HfArgumentParser((RankerModelArguments, RankerDataArguments, RankerTrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+    print(training_args.group_size)
+
     training_data_file = data_args.training_dataset_file.split('/')[-1].replace('.jsonl', '')
     formatted_model_name = model_args.model_name_or_path.replace('/', '-')
     distilled = "distilled" if data_args.teacher_file is not None else "first"
     training_args.output_dir = training_args.output_dir + f'/dot-{formatted_model_name}-{training_args.loss_fn.name}-{training_data_file}-{training_args.group_size}-{distilled}'
     model = Dot.from_pretrained(model_args.model_name_or_path)
 
-    dataset = TrainingDataset(data_args.training_dataset_file, corpus=data_args.ir_dataset, no_positive=data_args.no_positive, teacher_file=data_args.teacher_file, lazy_load_text=False)
+    dataset = TrainingDataset(data_args.training_dataset_file, group_size=training_args.group_size, corpus=data_args.ir_dataset, no_positive=data_args.no_positive, teacher_file=data_args.teacher_file, lazy_load_text=False)
     collate_fn = DotDataCollator(model.tokenizer)
 
     opt = AdamW(model.parameters(), lr=training_args.learning_rate)
