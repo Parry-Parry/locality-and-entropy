@@ -9,7 +9,6 @@ from rankers import (
                       )
 from transformers import HfArgumentParser, get_constant_schedule_with_warmup
 from torch.optim import AdamW
-import os
 
 def main():
     parser = HfArgumentParser((RankerModelArguments, RankerDataArguments, RankerTrainingArguments))
