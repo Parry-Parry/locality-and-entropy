@@ -7,11 +7,11 @@ FP16=true
 SAVE_LIMIT=1
 LOSS=$1
 GROUP_SIZE=$2
-TRIPLE_FILE="data/crossencoder.${GROUP_SIZE}.jsonl"
+TRIPLE_FILE="data/crossencoder.16.jsonl"
 BATCH_SIZE=$3
 GRAD_ACCUM=$4
 TEACHER_FILE=$5
-MAX_STEPS=${6:-"-1"}
+MAX_STEPS=300000
 
 # Build base command
 CMD="python -m implicit.train_cat \
