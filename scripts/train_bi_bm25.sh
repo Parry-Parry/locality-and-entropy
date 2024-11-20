@@ -13,7 +13,16 @@ TEACHER_FILE=$4
 
 # Define constant
 TOTAL_STEPS=600000
-BASE_BATCH_SIZE=32
+BASE_BATCH_SIZE=16
+
+# Calculate gradient accumulation steps and max steps
+if [ $BATCH_SIZE -gt $BASE_BATCH_SIZE ]; then
+  echo "Error: Batch size cannot exceed $BASE_BATCH_SIZE."
+  exit 1
+fi
+
+GRAD_ACCUM=$((BASE_BATCH_SIZE / BATCH_SIZE))
+MAX_STEPS=$((TOTAL_STEPS * GRAD_ACCUM))
 
 # Build base command
 CMD="python -m implicit.train_dot \

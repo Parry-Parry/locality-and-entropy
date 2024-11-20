@@ -13,7 +13,7 @@ TEACHER_FILE=$4
 
 # Define constant
 TOTAL_STEPS=300000
-BASE_BATCH_SIZE=32
+BASE_BATCH_SIZE=16
 
 # Calculate gradient accumulation steps and max steps
 if [ $BATCH_SIZE -gt $BASE_BATCH_SIZE ]; then
