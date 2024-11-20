@@ -1,4 +1,4 @@
-MODEL_NAME="google/electra-base-discriminator"
+MODEL_NAME="bert-base-uncased"
 OUTPUT_DIR="checkpoints"
 WANDB_PROJECT="implicit-distillation"
 WARMUP_RATIO=0.1
@@ -9,10 +9,11 @@ LOSS=$1
 GROUP_SIZE=$2
 TRIPLE_FILE="data/bm25.16.jsonl"
 BATCH_SIZE=$3
-GRAD_ACCUM=$4
-# optional teacher file is now last argument
-TEACHER_FILE=$5
-MAX_STEPS=600000
+TEACHER_FILE=$4
+
+# Define constant
+TOTAL_STEPS=600000
+BASE_BATCH_SIZE=32
 
 # Build base command
 CMD="python -m implicit.train_dot \

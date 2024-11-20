@@ -1,4 +1,4 @@
-MODEL_NAME="google/electra-base-discriminator"
+MODEL_NAME="bert-base-uncased"
 OUTPUT_DIR="checkpoints"
 WANDB_PROJECT="implicit-distillation"
 WARMUP_RATIO=0.1
@@ -9,9 +9,20 @@ LOSS=$1
 GROUP_SIZE=$2
 TRIPLE_FILE="data/crossencoder.16.jsonl"
 BATCH_SIZE=$3
-GRAD_ACCUM=$4
-TEACHER_FILE=$5
-MAX_STEPS=600000
+TEACHER_FILE=$4
+
+# Define constant
+TOTAL_STEPS=600000
+BASE_BATCH_SIZE=32
+
+# Calculate gradient accumulation steps and max steps
+if [ $BATCH_SIZE -gt $BASE_BATCH_SIZE ]; then
+  echo "Error: Batch size cannot exceed $BASE_BATCH_SIZE."
+  exit 1
+fi
+
+GRAD_ACCUM=$((BASE_BATCH_SIZE / BATCH_SIZE))
+MAX_STEPS=$((TOTAL_STEPS * GRAD_ACCUM))
 
 # Build base command
 CMD="python -m implicit.train_dot \
