@@ -2,7 +2,7 @@ MODEL_NAME="google/electra-base-discriminator"
 OUTPUT_DIR="checkpoints"
 WANDB_PROJECT="implicit-distillation"
 WARMUP_RATIO=0.1
-LR=5e-5
+LR=1e-5
 FP16=true
 SAVE_LIMIT=1
 LOSS=$1
@@ -13,7 +13,7 @@ TEACHER_FILE=$4
 
 # Define constant
 TOTAL_STEPS=300000
-BASE_BATCH_SIZE=32
+BASE_BATCH_SIZE=16
 
 # Calculate gradient accumulation steps and max steps
 if [ $BATCH_SIZE -gt $BASE_BATCH_SIZE ]; then
