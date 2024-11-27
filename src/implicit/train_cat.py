@@ -27,6 +27,9 @@ def main():
         training_args.output_dir
         + f"/cat-{formatted_model_name}-{training_args.loss_fn.name}-{training_data_file}-{training_args.group_size}-{distilled}"
     )
+    if os.path.exists(os.path.join(training_args.output_dir, "config.json")):
+        print(f"Model already exists at {training_args.output_dir}, exiting...")
+        return
     model = Cat.from_pretrained(model_args.model_name_or_path)
 
     dataset = TrainingDataset(
