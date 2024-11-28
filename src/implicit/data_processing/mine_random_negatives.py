@@ -85,28 +85,17 @@ def mine(
             "query": [],
             "text": [],
         }
-        for _qid in tqdm(negs.keys(), desc="Pivoting negatives"):
-            if len(negs[_qid]) < 1:
-                continue
-            qid = str(_qid)
-            try:
-                query_text = query_lookup[qid]
-            except:
-                logging.error(f"Query {qid} not found in queries")
-                continue
-            doc_id_a = str(doc_id_a_lookup[qid])
-            frame["qid"].append(qid)
-            frame["docno"].append(doc_id_a)
-            frame["text"].append(docs_lookup[doc_id_a])
-            frame["query"].append(query_text)
-            for _doc_id in negs[_qid]:
-                doc_id = str(_doc_id)
-                frame["qid"].append(qid)
-                frame["docno"].append(doc_id)
-                frame["text"].append(docs_lookup[doc_id])
-                frame["query"].append(query_text)
-        frame["score"] = [0.0] * len(frame["qid"])
-        return pd.DataFrame(frame).drop_duplicates(subset=["qid", "docno"])
+        for row in negs.itertuples():
+            frame["qid"].append(row.query_id)
+            frame["docno"].append(row.doc_id_a)
+            frame["query"].append(query_lookup[row.query_id])
+            frame["text"].append(docs_lookup[row.doc_id_a])
+            for doc_id_b in row.doc_id_b:
+                frame["qid"].append(row.query_id)
+                frame["docno"].append(doc_id_b)
+                frame["query"].append(query_lookup[row.query_id])
+                frame["text"].append(docs_lookup[doc_id_b])
+        return pd.DataFrame(frame)
 
     crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache)
     lookup = defaultdict(dict)
