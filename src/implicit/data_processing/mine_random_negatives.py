@@ -80,7 +80,7 @@ def mine(
     # get the jsonl linecount without ingesting the file
     line_count = 0
     with open(file) as f:
-        with open(self.training_dataset_file, "r", encoding="utf-8") as f:
+        with open(file, "r", encoding="utf-8") as f:
             while True:
                 line = f.readline()
                 line_count += 1
