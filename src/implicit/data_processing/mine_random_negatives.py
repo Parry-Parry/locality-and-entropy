@@ -58,7 +58,7 @@ def mine(
     dataset: str,
     out_dir: str,
     model_name_or_path: str = None,
-    batch_size: int = 1024,
+    batch_size: int = 768,
     n_neg: int = None,
     n_negs: list = [15],
     cache: str = None,
