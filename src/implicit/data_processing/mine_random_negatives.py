@@ -76,8 +76,6 @@ def mine(
         pd.DataFrame(dataset.queries_iter()).set_index("query_id")["text"].to_dict()
     )
     triples = pd.read_json(file, orient="records", lines=True, chunksize=100*batch_size)
-    doc_id_a_lookup = triples.set_index("query_id").doc_id_a.to_dict()
-    doc_id_a_lookup = {str(k): v for k, v in doc_id_a_lookup.items()}
 
     def pivot_negs(negs):
         frame = {
