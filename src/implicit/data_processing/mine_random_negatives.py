@@ -58,7 +58,6 @@ def mine(
     dataset: str,
     out_dir: str,
     model_name_or_path: str = None,
-    subset_depth: int = 100,
     batch_size: int = 512,
     n_neg: int = None,
     n_negs: list = [15],
@@ -78,7 +77,7 @@ def mine(
     triples = pd.read_json(file, orient="records", lines=True)
     doc_id_a_lookup = triples.set_index("query_id").doc_id_a.to_dict()
     doc_id_a_lookup = {str(k): v for k, v in doc_id_a_lookup.items()}
-    
+
     def pivot_negs(negs):
         frame = {
             "qid": [],
@@ -114,7 +113,7 @@ def mine(
     for n_neg in n_negs:
         group_size = n_neg + 1
         tmp_triples = triples.copy()
-        tmp_triples["doc_id_b"] = [random.sample(docs, k=subset_depth) for _ in range(len(triples))]
+        tmp_triples["doc_id_b"] = [random.sample(docs, k=n_neg) for _ in range(len(triples))]
         frame = pivot_negs(tmp_triples)
         res = crossencoder.transform(frame)
         for row in tqdm(res.itertuples()):
