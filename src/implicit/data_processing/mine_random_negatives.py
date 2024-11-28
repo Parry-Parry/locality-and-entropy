@@ -58,7 +58,7 @@ def mine(
     dataset: str,
     out_dir: str,
     model_name_or_path: str = None,
-    batch_size: int = 512,
+    batch_size: int = 1024,
     n_neg: int = None,
     n_negs: list = [15],
     cache: str = None,
@@ -118,7 +118,7 @@ def mine(
             chunk["doc_id_b"] = [random.sample(docs, k=n_neg) for _ in range(len(chunk))]
             frame = pivot_negs(chunk)
             res = crossencoder.transform(frame)
-            for row in tqdm(res.itertuples()):
+            for row in res.itertuples():
                 lookup[row.qid][row.docno] = row.score
             for row in chunk.itertuples():
                 f.write(json.dumps({"query_id": row.query_id, "doc_id_a": row.doc_id_a, "doc_id_b": row.doc_id_b}) + "\n")
