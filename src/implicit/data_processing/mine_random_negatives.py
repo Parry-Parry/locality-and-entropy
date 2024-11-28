@@ -88,13 +88,13 @@ def mine(
         for row in negs.itertuples():
             frame["qid"].append(row.query_id)
             frame["docno"].append(row.doc_id_a)
-            frame["query"].append(query_lookup[row.query_id])
-            frame["text"].append(docs_lookup[row.doc_id_a])
+            frame["query"].append(query_lookup[str(row.query_id)])
+            frame["text"].append(docs_lookup[str(row.doc_id_a)])
             for doc_id_b in row.doc_id_b:
                 frame["qid"].append(row.query_id)
                 frame["docno"].append(doc_id_b)
-                frame["query"].append(query_lookup[row.query_id])
-                frame["text"].append(docs_lookup[doc_id_b])
+                frame["query"].append(query_lookup[str(row.query_id)])
+                frame["text"].append(docs_lookup[str(doc_id_b)])
         return pd.DataFrame(frame)
 
     crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache)
