@@ -113,7 +113,7 @@ def mine(
     out_file = out_dir + f"/random.{group_size}.jsonl"
 
     with open(out_file, "a") as f:
-        for chunk in tqdm(triples, total=line_count):
+        for chunk in tqdm(triples, total=line_count//100*batch_size):
             chunk["doc_id_b"] = [random.sample(docs, k=n_neg) for _ in range(len(chunk))]
             frame = pivot_negs(chunk)
             res = crossencoder.transform(frame)
