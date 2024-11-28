@@ -3,7 +3,7 @@ from fire import Fire
 import ir_datasets as irds
 import pandas as pd
 import pyterrier as pt
-from tqdm import tqdm
+import tqdm
 import json
 if not pt.started():
     pt.init()
@@ -85,6 +85,7 @@ def mine(
             line_count += 1
             if not line:
                 break
+    print(f"Line count: {line_count}")
 
     def pivot_negs(negs):
         frame = {
@@ -111,8 +112,10 @@ def mine(
     group_size = n_negs[0] + 1
     out_file = out_dir + f"/random.{group_size}.jsonl"
 
+    progress_bar = tqdm.tqdm(total=int(line_count//100*batch_size))
     with open(out_file, "a") as f:
-        for chunk in tqdm(triples, total=int(line_count//100*batch_size)):
+        for chunk in triples:
+            progress_bar.update(1)
             chunk["doc_id_b"] = [random.sample(docs, k=n_neg) for _ in range(len(chunk))]
             frame = pivot_negs(chunk)
             res = crossencoder.transform(frame)
