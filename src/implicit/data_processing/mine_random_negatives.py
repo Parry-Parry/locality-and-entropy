@@ -95,7 +95,7 @@ def mine(
                 frame["docno"].append(doc_id_b)
                 frame["query"].append(query_lookup[str(row.query_id)])
                 frame["text"].append(docs_lookup[str(doc_id_b)])
-        return pd.DataFrame(frame)
+        return pd.DataFrame(frame).drop_duplicates()
 
     crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache)
     lookup = defaultdict(dict)
