@@ -79,13 +79,12 @@ def mine(
 
     # get the jsonl linecount without ingesting the file
     line_count = 0
-    with open(file) as f:
-        with open(file, "r", encoding="utf-8") as f:
-            while True:
-                line = f.readline()
-                line_count += 1
-                if not line:
-                    break
+    with open(file, "r", encoding="utf-8") as f:
+        while True:
+            line = f.readline()
+            line_count += 1
+            if not line:
+                break
 
     def pivot_negs(negs):
         frame = {
@@ -113,7 +112,7 @@ def mine(
     out_file = out_dir + f"/random.{group_size}.jsonl"
 
     with open(out_file, "a") as f:
-        for chunk in tqdm(triples, total=line_count//100*batch_size):
+        for chunk in tqdm(triples, total=int(line_count//100*batch_size)):
             chunk["doc_id_b"] = [random.sample(docs, k=n_neg) for _ in range(len(chunk))]
             frame = pivot_negs(chunk)
             res = crossencoder.transform(frame)
