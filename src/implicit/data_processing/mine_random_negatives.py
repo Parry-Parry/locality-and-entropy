@@ -12,6 +12,7 @@ import os
 import random
 from pyterrier_caching import ScorerCache
 from implicit.util import run2lookup, save_json
+ 
 
 
 def bm25(index_dir: str, k1: float = 1.2, b: float = 0.75, threads: int = 1, **kwargs):
@@ -36,7 +37,7 @@ def bm25(index_dir: str, k1: float = 1.2, b: float = 0.75, threads: int = 1, **k
 def load_crossencoder(
     model_name_or_path: str,
     batch_size: int = 512,
-    verbose: bool = True,
+    verbose: bool = False,
     cache: str = None,
 ):
     from rankers import CatTransformer
@@ -104,7 +105,7 @@ def mine(
     out_file = out_dir + f"/random.{group_size}.jsonl"
 
     with open(out_file, "a") as f:
-        for chunk in triples:
+        for chunk in tqdm(triples):
             chunk["doc_id_b"] = [random.sample(docs, k=n_neg) for _ in range(len(chunk))]
             frame = pivot_negs(chunk)
             res = crossencoder.transform(frame)
