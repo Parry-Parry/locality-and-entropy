@@ -4,7 +4,7 @@ import ir_datasets as irds
 import pandas as pd
 import pyterrier as pt
 from tqdm import tqdm
-
+import json
 if not pt.started():
     pt.init()
 import logging
@@ -74,7 +74,7 @@ def mine(
     query_lookup = (
         pd.DataFrame(dataset.queries_iter()).set_index("query_id")["text"].to_dict()
     )
-    triples = pd.read_json(file, orient="records", lines=True)
+    triples = pd.read_json(file, orient="records", lines=True, chunksize=100*batch_size)
     doc_id_a_lookup = triples.set_index("query_id").doc_id_a.to_dict()
     doc_id_a_lookup = {str(k): v for k, v in doc_id_a_lookup.items()}
 
@@ -99,17 +99,20 @@ def mine(
 
     crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache)
     lookup = defaultdict(dict)
-    for n_neg in n_negs:
-        group_size = n_neg + 1
-        tmp_triples = triples.copy()
-        tmp_triples["doc_id_b"] = [random.sample(docs, k=n_neg) for _ in range(len(triples))]
-        frame = pivot_negs(tmp_triples)
-        res = crossencoder.transform(frame)
-        for row in tqdm(res.itertuples()):
-            lookup[row.qid][row.docno] = row.score
-        tmp_triples.to_json(
-            out_dir + f"/random.{group_size}.jsonl", orient="records", lines=True
-        )
+    n_neg = n_neg or n_negs[0]
+    group_size = n_negs[0] + 1
+    out_file = out_dir + f"/random.{group_size}.jsonl"
+
+    with open(out_file, "a") as f:
+        for chunk in triples:
+            chunk["doc_id_b"] = [random.sample(docs, k=n_neg) for _ in range(len(chunk))]
+            frame = pivot_negs(chunk)
+            res = crossencoder.transform(frame)
+            for row in tqdm(res.itertuples()):
+                lookup[row.qid][row.docno] = row.score
+            for row in chunk.itertuples():
+                f.write(json.dumps({"query_id": row.query_id, "doc_id_a": row.doc_id_a, "doc_id_b": row.doc_id_b}) + "\n")
+                f.flush()
 
     save_json(lookup, out_dir + f"/random.scores.json.gz")
 
