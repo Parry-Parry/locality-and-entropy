@@ -91,7 +91,7 @@ def mine(
     n_neg = n_neg or n_negs[0]
     group_size = n_negs[0] + 1
     out_file = out_dir + f"/random.{group_size}.jsonl"
-    for batch in tqdm.tqdm(chunked(zip(query_pos_lookup.items(), negatives), 100)):
+    for batch in tqdm.tqdm(chunked(zip(query_pos_lookup.items(), negatives), 100), total=len(query_pos_lookup)):
         frame = {
             "qid": [],
             "docno": [],
