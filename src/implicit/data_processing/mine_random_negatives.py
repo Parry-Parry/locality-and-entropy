@@ -58,7 +58,7 @@ def mine(
     dataset: str,
     out_dir: str,
     model_name_or_path: str = None,
-    batch_size: int = 512,
+    batch_size: int = 768,
     n_neg: int = None,
     n_negs: list = [15],
     cache: str = None,
@@ -74,7 +74,7 @@ def mine(
     query_lookup = (
         pd.DataFrame(dataset.queries_iter()).set_index("query_id")["text"].to_dict()
     )
-    triples = pd.read_json(file, orient="records", lines=True, chunksize=100*batch_size)
+    triples = pd.read_json(file, orient="records", lines=True, chunksize=10*batch_size)
 
     # get the jsonl linecount without ingesting the file
     line_count = 0
