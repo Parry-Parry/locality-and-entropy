@@ -12,6 +12,7 @@ import os
 import random
 from pyterrier_caching import ScorerCache
 from implicit.util import save_json
+from more_itertools import chunked
 
 
 def bm25(index_dir: str, k1: float = 1.2, b: float = 0.75, threads: int = 1, **kwargs):
@@ -61,6 +62,7 @@ def mine(
     batch_size: int = 768,
     n_neg: int = None,
     n_negs: list = [15],
+    depth : int = 50,
     cache: str = None,
 ):
     logging.info(f"Output Directory: {out_dir}")
@@ -71,58 +73,52 @@ def mine(
     docs = pd.DataFrame(dataset.docs_iter())
     docs_lookup = docs.set_index("doc_id")["text"].to_dict()
     docs = docs.doc_id.to_list()
+    queries = pd.DataFrame(dataset.queries_iter())
     query_lookup = (
-        pd.DataFrame(dataset.queries_iter()).set_index("query_id")["text"].to_dict()
+        queries.set_index("query_id")["text"].to_dict()
     )
-    triples = pd.read_json(file, orient="records", lines=True, chunksize=10*batch_size)
+    triples = load_json(file)
 
-    # get the jsonl linecount without ingesting the file
-    line_count = 0
-    with open(file, "r", encoding="utf-8") as f:
-        while True:
-            line = f.readline()
-            line_count += 1
-            if not line:
-                break
-    print(f"Line count: {line_count}")
+    query_pos_lookup = {}
+    for row in triples:
+        if row["query_id"] not in query_pos_lookup:
+            query_pos_lookup[row["query_id"]] = []
+        query_pos_lookup[row["query_id"]].append(row["doc_id_a"])
 
-    def pivot_negs(negs):
+    negatives = [random.sample(docs, k=depth) for _ in range(len(query_pos_lookup))]
+    crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache)
+    lookup = defaultdict(dict)
+    n_neg = n_neg or n_negs[0]
+    group_size = n_negs[0] + 1
+    out_file = out_dir + f"/random.{group_size}.jsonl"
+    for batch in tqdm(chunked(zip(query_pos_lookup.items(), negatives))):
         frame = {
             "qid": [],
             "docno": [],
             "query": [],
             "text": [],
         }
-        for row in negs.itertuples():
-            frame["qid"].append(row.query_id)
-            frame["docno"].append(row.doc_id_a)
-            frame["query"].append(query_lookup[str(row.query_id)])
-            frame["text"].append(docs_lookup[str(row.doc_id_a)])
-            for doc_id_b in row.doc_id_b:
-                frame["qid"].append(row.query_id)
-                frame["docno"].append(doc_id_b)
-                frame["query"].append(query_lookup[str(row.query_id)])
-                frame["text"].append(docs_lookup[str(doc_id_b)])
-        return pd.DataFrame(frame).drop_duplicates()
-
-    crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache)
-    lookup = defaultdict(dict)
-    n_neg = n_neg or n_negs[0]
-    group_size = n_negs[0] + 1
-    out_file = out_dir + f"/random.{group_size}.jsonl"
-
-    progress_bar = tqdm.tqdm(total=line_count)
-    with open(out_file, "a") as f:
-        for chunk in triples:
-            progress_bar.update(len(chunk))
-            chunk["doc_id_b"] = [random.sample(docs, k=n_neg) for _ in range(len(chunk))]
-            frame = pivot_negs(chunk)
-            res = crossencoder.transform(frame)
-            for row in res.itertuples():
-                lookup[row.qid][row.docno] = row.score
-            for row in chunk.itertuples():
-                f.write(json.dumps({"query_id": row.query_id, "doc_id_a": row.doc_id_a, "doc_id_b": row.doc_id_b}) + "\n")
-                f.flush()
+        for (query_id, pos), negs in batch:
+            query_text = query_lookup[str(query_id)]
+            for doc_id in pos:
+                frame["qid"].append(query_id)
+                frame["docno"].append(doc_id)
+                frame["query"].append(query_text)
+                frame["text"].append(docs_lookup[str(doc_id)])
+            for doc_id in negs:
+                frame["qid"].append(query_id)
+                frame["docno"].append(doc_id)
+                frame["query"].append(query_text)
+                frame["text"].append(docs_lookup[str(doc_id)])
+        frame = pd.DataFrame(frame).drop_duplicates()
+        res = crossencoder.transform(frame)
+        for row in res.itertuples():
+            lookup[row.qid][row.docno] = row.score
+    
+    with open(out_file, "w") as f:
+        for (query_id, pos), negs in tqdm(zip(query_pos_lookup.items(), negatives)):
+            for doc_id in pos:
+                f.write(json.dumps({"query_id": query_id, "doc_id_a": doc_id, "doc_id_b": [x for x in random.sample(docs, k=n_neg)]}) + "\n")
 
     save_json(lookup, out_dir + f"/random.scores.json.gz")
 
