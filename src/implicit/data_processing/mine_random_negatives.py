@@ -116,7 +116,7 @@ def mine(
             lookup[row.qid][row.docno] = row.score
     
     with open(out_file, "w") as f:
-        for (query_id, pos), negs in tqdm(zip(query_pos_lookup.items(), negatives)):
+        for (query_id, pos), negs in tqdm.tqdm(zip(query_pos_lookup.items(), negatives)):
             for doc_id in pos:
                 f.write(json.dumps({"query_id": query_id, "doc_id_a": doc_id, "doc_id_b": [x for x in random.sample(docs, k=n_neg)]}) + "\n")
 
