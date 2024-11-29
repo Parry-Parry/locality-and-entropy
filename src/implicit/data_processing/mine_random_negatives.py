@@ -59,7 +59,7 @@ def mine(
     dataset: str,
     out_dir: str,
     model_name_or_path: str = None,
-    batch_size: int = 768,
+    batch_size: int = 512,
     n_neg: int = None,
     n_negs: list = [15],
     depth : int = 50,
@@ -84,14 +84,14 @@ def mine(
         if row["query_id"] not in query_pos_lookup:
             query_pos_lookup[row["query_id"]] = []
         query_pos_lookup[row["query_id"]].append(row["doc_id_a"])
-
-    negatives = [random.sample(docs, k=depth) for _ in range(len(query_pos_lookup))]
+    n_neg = n_neg or n_negs[0]
+    negatives = [random.sample(docs, k=n_neg) for _ in range(len(query_pos_lookup))]
     crossencoder = load_crossencoder(model_name_or_path, batch_size=batch_size, cache=cache)
     lookup = defaultdict(dict)
-    n_neg = n_neg or n_negs[0]
+    
     group_size = n_negs[0] + 1
     out_file = out_dir + f"/random.{group_size}.jsonl"
-    for batch in tqdm.tqdm(chunked(zip(query_pos_lookup.items(), negatives), 100), total=len(query_pos_lookup)):
+    for batch in tqdm.tqdm(chunked(zip(query_pos_lookup.items(), negatives), 1000), total=len(query_pos_lookup)):
         frame = {
             "qid": [],
             "docno": [],
@@ -118,7 +118,7 @@ def mine(
     with open(out_file, "w") as f:
         for (query_id, pos), negs in tqdm.tqdm(zip(query_pos_lookup.items(), negatives)):
             for doc_id in pos:
-                f.write(json.dumps({"query_id": query_id, "doc_id_a": doc_id, "doc_id_b": [x for x in random.sample(docs, k=n_neg)]}) + "\n")
+                f.write(json.dumps({"query_id": query_id, "doc_id_a": doc_id, "doc_id_b": negs}) + "\n")
 
     save_json(lookup, out_dir + f"/random.scores.json.gz")
 
