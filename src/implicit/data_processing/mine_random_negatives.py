@@ -11,7 +11,7 @@ import logging
 import os
 import random
 from pyterrier_caching import ScorerCache
-from implicit.util import save_json
+from implicit.util import save_json, load_json
 from more_itertools import chunked
 
 
