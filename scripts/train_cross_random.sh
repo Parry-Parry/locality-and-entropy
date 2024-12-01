@@ -1,0 +1,56 @@
+MODEL_NAME="google/electra-base-discriminator"
+OUTPUT_DIR="checkpoints"
+WANDB_PROJECT="implicit-distillation"
+WARMUP_RATIO=0.1
+LR=1e-5
+FP16=true
+SAVE_LIMIT=1
+LOSS=$1
+GROUP_SIZE=$2
+TRIPLE_FILE="data/random.16.jsonl"
+TEACHER_FILE="data/random.scores.json.gz"
+BATCH_SIZE=$3
+
+# Define constant
+TOTAL_STEPS=300000
+BASE_BATCH_SIZE=16
+
+# Calculate gradient accumulation steps and max steps
+if [ $BATCH_SIZE -gt $BASE_BATCH_SIZE ]; then
+  echo "Error: Batch size cannot exceed $BASE_BATCH_SIZE."
+  exit 1
+fi
+
+GRAD_ACCUM=$((BASE_BATCH_SIZE / BATCH_SIZE))
+MAX_STEPS=$((TOTAL_STEPS * GRAD_ACCUM))
+
+# Build base command
+CMD="python -m implicit.train_cat \
+--model_name_or_path $MODEL_NAME \
+--output_dir $OUTPUT_DIR \
+--wandb_project $WANDB_PROJECT \
+--warmup_ratio $WARMUP_RATIO \
+--learning_rate $LR \
+--save_total_limit $SAVE_LIMIT \
+--loss_fn $LOSS \
+--training_dataset_file $TRIPLE_FILE \
+--group_size $GROUP_SIZE \
+--per_device_train_batch_size $BATCH_SIZE \
+--gradient_accumulation_steps $GRAD_ACCUM \
+--ir_dataset "msmarco-passage/train/triples-small" \
+--num_train_epochs 1 \
+--logging_steps 1000 \
+--save_steps 100000 \
+--dataloader_num_workers 4 \
+--fp16 t \
+--report_to wandb"
+# Add max steps argument only if it's defined
+if [ ! -z "$MAX_STEPS" ]; then
+    CMD="$CMD --max_steps $MAX_STEPS"
+fi
+# Check if LOSS is "lce"
+if [[ "$LOSS" != "lce" ]]; then
+    CMD="$CMD --teacher_file $TEACHER_FILE"
+fi
+# Execute the command
+eval $CMD
