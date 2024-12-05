@@ -70,7 +70,6 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
             train_file_path,
         )
 
-    ce_scores = {}
     negs_to_use = None
 
     with gzip.open(train_file_path, 'rt') as fIn:
@@ -78,8 +77,8 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
             data = json.loads(line)
 
             # Get the positive passage ids
-            qid = str(data["qid"])
-            pos_pids = str(data["pos"])
+            qid = data["qid"]
+            pos_pids = data["pos"]
 
             if len(pos_pids) == 0:  # Skip entries without positives passages
                 continue
