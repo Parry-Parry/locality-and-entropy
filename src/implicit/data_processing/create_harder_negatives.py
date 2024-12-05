@@ -78,8 +78,8 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
             data = json.loads(line)
 
             # Get the positive passage ids
-            qid = data["qid"]
-            pos_pids = data["pos"]
+            qid = str(data["qid"])
+            pos_pids = str(data["pos"])
 
             if len(pos_pids) == 0:  # Skip entries without positives passages
                 continue
