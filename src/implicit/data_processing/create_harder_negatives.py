@@ -1,6 +1,6 @@
 import gzip
 import json
-import tqdm
+from tqdm import tqdm
 import os
 import logging
 import pickle
