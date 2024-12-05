@@ -71,6 +71,7 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
         )
 
     negs_to_use = None
+    out = []
 
     with gzip.open(train_file_path, 'rt') as fIn:
         for line in tqdm(fIn):
@@ -109,8 +110,9 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
             
             neg_pids = list(neg_pids)
             neg_pids = random.sample(neg_pids, min(n_neg, len(neg_pids)))
+            out.append({'query_id': data['qid'], 'doc_ida': pos_pids, 'doc_id_b': neg_pids})
 
-    data = pd.DataFrame({'query_id': data['qid'], 'doc_ida': pos_pids, 'doc_id_b': neg_pids})
+    data = pd.DataFrame.from_records(out)
     out_file = os.path.join(data_folder, f"ensemble.{n_neg}.jsonl")
     data.to_json(out_file, orient='records', lines=True)
 
