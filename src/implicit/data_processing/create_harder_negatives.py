@@ -8,7 +8,8 @@ import sys
 import requests
 from ..util import save_json
 from fire import Fire
-
+import pandas as pd
+import random
 
 def http_get(url: str, path: str) -> None:
     """
@@ -107,10 +108,10 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
                         if negs_added >= num_negs_per_system:
                             break
 
-    data = {'query_id': data['qid'], 'doc_ida': pos_pids, 'doc_id_b': neg_pids}
+    data = pd.DataFrame({'query_id': data['qid'], 'doc_ida': pos_pids, 'doc_id_b': neg_pids})
     data['doc_id_b'] = data["doc_id_b"].apply(lambda x: random.sample(list(x), n_neg))
     out_file = os.path.join(data_folder, f"ensemble.{n_neg}.jsonl")
-    save_json(data, out_file)
+    data.to_json(out_file, orient='records', lines=True)
 
     return out_file
 
