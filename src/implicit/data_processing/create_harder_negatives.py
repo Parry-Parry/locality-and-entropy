@@ -46,7 +46,7 @@ def http_get(url: str, path: str) -> None:
     os.rename(download_filepath, path)
     progress.close()
 
-def get_negatives(num_negs_per_system, ce_score_margin=3.0, data_folder="data", n_neg=16):
+def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data", n_neg=16):
 
     ce_scores_file = os.path.join(data_folder, "cross-encoder-ms-marco-MiniLM-L-6-v2-scores.pkl.gz")
     if not os.path.exists(ce_scores_file):
