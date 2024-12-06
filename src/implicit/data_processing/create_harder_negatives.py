@@ -107,10 +107,14 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
                         negs_added += 1
                         if negs_added >= num_negs_per_system:
                             break
-            
+        
             neg_pids = list(neg_pids)
             neg_pids = random.sample(neg_pids, min(n_neg, len(neg_pids)))
-            out.append({'query_id': data['qid'], 'doc_id_a': pos_pids, 'doc_id_b': neg_pids})
+            if len(pos_pids) == 1:
+                out.append({'query_id': data['qid'], 'doc_id_a': pos_pids[0], 'doc_id_b': neg_pids})
+            else:
+                for pos_pid in pos_pids:
+                    out.append({'query_id': data['qid'], 'doc_id_a': pos_pid, 'doc_id_b': neg_pids})
 
     data = pd.DataFrame.from_records(out)
     out_file = os.path.join(data_folder, f"ensemble.{n_neg}.jsonl")
