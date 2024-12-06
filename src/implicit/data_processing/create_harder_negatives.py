@@ -6,7 +6,6 @@ import logging
 import pickle
 import sys
 import requests
-from ..util import save_json
 from fire import Fire
 import pandas as pd
 import random
@@ -47,6 +46,7 @@ def http_get(url: str, path: str) -> None:
     os.rename(download_filepath, path)
     progress.close()
 
+
 def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data", n_neg=16):
 
     ce_scores_file = os.path.join(data_folder, "cross-encoder-ms-marco-MiniLM-L-6-v2-scores.pkl.gz")
@@ -76,6 +76,7 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
     with gzip.open(train_file_path, 'rt') as fIn:
         for line in tqdm(fIn):
             data = json.loads(line)
+            breakpoint()
 
             # Get the positive passage ids
             qid = data["qid"]
