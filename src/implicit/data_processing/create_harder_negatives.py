@@ -76,7 +76,6 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
     with gzip.open(train_file_path, 'rt') as fIn:
         for line in tqdm(fIn):
             data = json.loads(line)
-            breakpoint()
 
             # Get the positive passage ids
             qid = data["qid"]
