@@ -8,3 +8,4 @@ python -m implicit.data_processing.get_scores \
     --model_name_or_path $CHECKPOINT \
     --dataset $DATASET \
     --out_dir $OUTPUT_DIR \
+    --name_override "ensemble"

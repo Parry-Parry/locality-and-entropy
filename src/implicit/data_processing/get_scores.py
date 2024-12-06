@@ -61,13 +61,14 @@ def mine(
     batch_size: int = 512,
     cache: str = None,
     chunk_batches: int = 10000,
+    name_override : str = None
 ):
     chunk_size = chunk_batches * batch_size
     dataset = irds.load(dataset)
     queries = pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
     lookup = defaultdict(dict)
-    name = name = model_name_or_path.replace("/", "-")
+    name = model_name_or_path.replace("/", "-")
     if os.path.exists(out_dir + f"/{name}.scores.json.gz"):
         lookup = load_json(out_dir + f"/{name}.scores.json.gz")
 
@@ -115,7 +116,8 @@ def mine(
         res = crossencoder.transform(frame)
         for row in tqdm(res.itertuples()):
             lookup[row.qid][row.docno] = row.score
-
+    if name_override:
+        name = name_override
     save_json(lookup, out_dir + f"/{name}.scores.json.gz")
 
     return f"Successfully saved to {out_dir}"
