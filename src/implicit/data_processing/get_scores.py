@@ -68,7 +68,7 @@ def mine(
     queries = pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
     lookup = defaultdict(dict)
-    name = model_name_or_path.replace("/", "-")
+    name = model_name_or_path.replace("/", "-") if name_override is None else name_override
     if os.path.exists(out_dir + f"/{name}.scores.json.gz"):
         lookup = load_json(out_dir + f"/{name}.scores.json.gz")
 
