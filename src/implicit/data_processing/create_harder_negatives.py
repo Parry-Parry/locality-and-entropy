@@ -8,6 +8,7 @@ import sys
 import requests
 from fire import Fire
 import pandas as pd
+import ir_datasets as irds
 import random
 
 def http_get(url: str, path: str) -> None:
@@ -48,7 +49,7 @@ def http_get(url: str, path: str) -> None:
 
 
 def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data", n_neg=16):
-
+    all_docs = pd.DataFrame(irds.load('msmarco-passage').docs_iter()).doc_id.to_list()
     ce_scores_file = os.path.join(data_folder, "cross-encoder-ms-marco-MiniLM-L-6-v2-scores.pkl.gz")
     if not os.path.exists(ce_scores_file):
         logging.info("Download cross-encoder scores file")
@@ -109,6 +110,8 @@ def get_negatives(num_negs_per_system=5, ce_score_margin=3.0, data_folder="data"
                             break
         
             neg_pids = list(neg_pids)
+            if len(neg_pids) < n_neg:
+                neg_pids = neg_pids + random.sample(all_docs, n_neg - len(neg_pids))
             if len(pos_pids) == 1:
                 out.append({'query_id': data['qid'], 'doc_id_a': pos_pids[0], 'doc_id_b': random.sample(neg_pids, min(n_neg, len(neg_pids)))})
             else:
