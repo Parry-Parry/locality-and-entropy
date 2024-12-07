@@ -113,6 +113,12 @@ def mine(
 
     for group in triples:
         frame = pivot_triples(group)
+        # filter if we already have scores for a qid-docno pair
+        
+        def filter_row(qid, docno):
+            return not (qid in lookup and docno in lookup[qid])
+        frame = frame[frame.apply(lambda row: filter_row(row.qid, row.docno), axis=1)]
+
         res = crossencoder.transform(frame)
         for row in tqdm(res.itertuples()):
             lookup[row.qid][row.docno] = row.score
