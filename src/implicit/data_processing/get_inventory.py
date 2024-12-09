@@ -76,3 +76,6 @@ def inventory(directory : str):
         total = len(SOURCES[source])
         expected = len(LOSS_FUNCTIONS) * len(NEGATIVES) * 2
         print(f"Source: {source}, Total: {total}, Expected: {expected}, Percentage: {total/expected}")
+
+if __name__ == "__main__":
+    Fire(inventory)
