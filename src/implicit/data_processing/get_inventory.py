@@ -42,7 +42,7 @@ def parse_name(name : str):
     return Item(model_type=model_type, loss_function=loss, negative_source=negative_source, negative_count=n_count)
 
 
-def inventory(directory : str):
+def inventory(directory : str, output : str = None):
     SOURCES = {
         'crossencoder' : [],
         'random' : [],
@@ -76,6 +76,39 @@ def inventory(directory : str):
         total = len(SOURCES[source])
         expected = len(LOSS_FUNCTIONS) * len(NEGATIVES) * 2
         print(f"Source: {source}, Total: {total}, Expected: {expected}, Percentage: {total/expected}")
-
+    
+    if output is not None:
+        # create a csv file with a boolean for if a required model is missing
+        out = {
+            'source' : [],
+            'model_type' : [],
+            'loss_function' : [],
+            'negative_count' : [],
+            'complete' : []
+        }
+        for source in SOURCES:
+            for item in SOURCES[source]:
+                out['source'].append(source)
+                out['model_type'].append(item.model_type)
+                out['loss_function'].append(item.loss_function)
+                out['negative_count'].append(item.negative_count)
+                out['complete'].append(True)
+        
+        for n in NEGATIVES:
+            for loss in LOSS_FUNCTIONS:
+                for source in SOURCES:
+                    for model_type in ['cat', 'dot']:
+                        item = Item(model_type=model_type, loss_function=loss, negative_source=source, negative_count=n)
+                        out['source'].append(source)
+                        out['model_type'].append(item.model_type)
+                        out['loss_function'].append(item.loss_function)
+                        out['negative_count'].append(item.negative_count)
+                        if item not in SOURCES[source]:
+                            out['complete'].append(False)
+                        else:
+                            out['complete'].append(True)
+        import pandas as pd
+        df = pd.DataFrame(out)
+        df.to_csv(output, index=False)
 if __name__ == "__main__":
     Fire(inventory)
