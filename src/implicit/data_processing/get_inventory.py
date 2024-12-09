@@ -2,7 +2,7 @@ from fire import Fire
 import os
 from dataclasses import dataclass
 
-NEGATIVES = [2, 4, 8, 16]
+NEGATIVES = [16, 8, 4, 2]
 LOSS_FUNCTIONS = ['LCE', 'MarginMSE', 'RankNet', 'KL_Divergence']
 SOURCES = {
         'crossencoder' : [],
