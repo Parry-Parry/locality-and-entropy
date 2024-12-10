@@ -3,13 +3,31 @@ import os
 from dataclasses import dataclass
 
 NEGATIVES = [16, 8, 4, 2]
+batch_size_mapping = {
+    16 : 8,
+    8 : 8,
+    4 : 16,
+    2 : 16
+}
 LOSS_FUNCTIONS = ['LCE', 'MarginMSE', 'RankNet', 'KL_Divergence']
+loss_mapping = {
+    'LCE' : 'lce',
+    'MarginMSE' : 'margin_mse',
+    'RankNet' : 'ranknet',
+    'KL_Divergence' : 'kl_div'
+}
 SOURCES = {
         'crossencoder' : [],
         'random' : [],
         'bm25' : [],
         'ensemble' : []
     }
+source_mapping = {
+    'crossencoder' : 'both',
+    'random' : 'random',
+    'bm25' : 'both',
+    'ensemble' : 'ensemble'
+}
 
 
 @dataclass
@@ -109,6 +127,23 @@ def inventory(directory : str, output : str = None):
                             out['complete'].append(True)
         import pandas as pd
         df = pd.DataFrame(out)
-        df.to_csv(output, index=False)
+        out_file = 'checklist.csv'
+        df.to_csv(os.path.join(output, out_file), index=False)
+        print(f"CSV written to {os.path.join(output, out_file)}")
+        out_string = ''
+        for row in df.itertuples():
+            if not row.complete:
+                parsed_source = source_mapping[row.source]
+                parsed_batch = batch_size_mapping[row.negative_count]
+                parsed_loss = loss_mapping[row.loss_function]
+                model_type = 'bi' if row.model_type == 'dot' else 'cross'
+                script = f'./scripts/train_{model_type}_{parsed_source}.sh'
+                args = [script, parsed_loss, str(row.negative_count), str(parsed_batch)]
+                out_string += ' '.join(args) + '\n'
+        out_file = 'missing_models.txt'
+        with open(os.path.join(output, out_file), 'w') as f:
+            f.write(out_string)
+        print(f"CMD written to {os.path.join(output, out_file)}")
+
 if __name__ == "__main__":
     Fire(inventory)
