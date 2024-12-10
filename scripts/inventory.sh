@@ -1,5 +1,5 @@
 DIRECTORY='checkpoints'
-OUTPUT='data/inventory.csv'
+OUTPUT='data'
 
 python -m implicit.data_processing.get_inventory \
     --directory $DIRECTORY \
