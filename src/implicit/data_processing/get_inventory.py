@@ -137,7 +137,11 @@ def inventory(directory : str, output : str = None):
                 parsed_batch = batch_size_mapping[row.negative_count]
                 parsed_loss = loss_mapping[row.loss_function]
                 model_type = 'bi' if row.model_type == 'dot' else 'cross'
-                script = f'./scripts/train_{model_type}_{parsed_source}.sh'
+                if parsed_source == 'both':
+                    script =  f'./scripts/train_{parsed_source}_{model_type}.sh'
+                else:
+                    script = f'./scripts/train_{model_type}_{parsed_source}.sh'
+
                 args = [script, parsed_loss, str(row.negative_count), str(parsed_batch)]
                 out_string += ' '.join(args) + '\n'
         out_file = 'missing_models.txt'
