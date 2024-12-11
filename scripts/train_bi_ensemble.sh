@@ -25,7 +25,7 @@ GRAD_ACCUM=$((BASE_BATCH_SIZE / BATCH_SIZE))
 MAX_STEPS=$((TOTAL_STEPS * GRAD_ACCUM))
 
 # Build base command
-CMD="python -m implicit.train_bi \
+CMD="python -m implicit.train_dot \
 --model_name_or_path $MODEL_NAME \
 --output_dir $OUTPUT_DIR \
 --wandb_project $WANDB_PROJECT \
