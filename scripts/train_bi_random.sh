@@ -1,4 +1,4 @@
-MODEL_NAME="google/electra-base-discriminator"
+MODEL_NAME="bert-base-uncased"
 OUTPUT_DIR="checkpoints"
 WANDB_PROJECT="implicit-distillation"
 WARMUP_RATIO=0.1
