@@ -38,10 +38,7 @@ def mine(
     out_dir: str,
     index_path: str = 'macavaney/msmarco-passage.corpusgraph.bm25.1024',
     subset_depth: int = 100,
-    depth: int = 200,
-    subset: int = -1,
     n_neg: int = 15,
-    n_negs: list = [15, 7, 1],
 ):
     logging.info(f"Index: {index_path}")
     logging.info(f"Output Directory: {out_dir}")
