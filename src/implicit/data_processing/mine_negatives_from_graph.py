@@ -52,7 +52,7 @@ def mine(
     triples = pd.read_json(file, orient="records", lines=True)
 
     def get_negatives(doc_id_a):
-        candidates = graph.neighbors(doc_id_a)
+        candidates = graph.neighbours(doc_id_a)
         length = len(candidates)
         if length < n_neg:
             return candidates + random.sample(docs, k=n_neg - length)
