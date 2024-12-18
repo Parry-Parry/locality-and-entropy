@@ -1,16 +1,13 @@
-from collections import defaultdict
 from fire import Fire
 import ir_datasets as irds
 import pandas as pd
 import pyterrier as pt
-from tqdm import tqdm
 
 if not pt.started():
     pt.init()
 import logging
 import os
 import random
-from implicit.util import run2lookup, save_json
 import pyterrier_alpha as pta
 
 def bm25(index_dir: str, k1: float = 1.2, b: float = 0.75, threads: int = 1, **kwargs):
