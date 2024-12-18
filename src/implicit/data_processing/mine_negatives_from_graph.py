@@ -55,6 +55,7 @@ def mine(
 
     def get_negatives(doc_id_a):
         candidates = [*map(str, graph.neighbours(doc_id_a).tolist())]
+        candidates = [doc for doc in candidates if doc != doc_id_a]
         length = len(candidates)
         if length < n_neg:
             return candidates + random.sample(docs, k=n_neg - length)
