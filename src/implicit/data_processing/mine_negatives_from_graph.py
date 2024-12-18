@@ -49,6 +49,7 @@ def mine(
     logging.info("Loading dataset...")
     docs = pd.DataFrame(dataset.docs_iter())
     docs = docs.doc_id.to_list()
+    print(type(docs))
     triples = pd.read_json(file, orient="records", lines=True)
 
     def get_negatives(doc_id_a):
