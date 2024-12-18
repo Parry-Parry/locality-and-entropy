@@ -49,12 +49,12 @@ def mine(
     logging.info("Loading dataset...")
     docs = pd.DataFrame(dataset.docs_iter())
     docs = docs.doc_id.to_list()
-    print(type(docs))
     triples = pd.read_json(file, orient="records", lines=True)
 
     def get_negatives(doc_id_a):
         candidates = graph.neighbours(doc_id_a)
         length = len(candidates)
+        breakpoint()
         if length < n_neg:
             return candidates + random.sample(docs, k=n_neg - length)
         return random.sample(candidates, k=n_neg)
