@@ -52,7 +52,7 @@ def mine(
     triples = pd.read_json(file, orient="records", lines=True)
 
     def get_negatives(doc_id_a):
-        candidates = graph.neighbours(doc_id_a)
+        candidates = [*map(str, graph.neighbours(doc_id_a).tolist())]
         length = len(candidates)
         breakpoint()
         if length < n_neg:
