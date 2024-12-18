@@ -43,13 +43,15 @@ def mine(
     if index_path is None:
         index_path = "msmarco_passage"
     name = "bm25-graph"
+    group_size = n_neg + 1
+    out_file = out_dir + f"/{name}.{group_size}.jsonl"
     graph = pta.Artifact.from_hf('macavaney/msmarco-passage.corpusgraph.bm25.1024').to_limit_k(subset_depth)
 
     dataset = irds.load(dataset)
     logging.info("Loading dataset...")
     docs = pd.DataFrame(dataset.docs_iter())
     docs = docs.doc_id.to_list()
-    triples = pd.read_json(file, orient="records", lines=True)
+    triples = pd.read_json(file, orient="records", lines=True, chunksize=100000)
 
     def get_negatives(doc_id_a):
         candidates = [*map(str, graph.neighbours(doc_id_a).tolist())]
@@ -57,11 +59,14 @@ def mine(
         if length < n_neg:
             return candidates + random.sample(docs, k=n_neg - length)
         return random.sample(candidates, k=n_neg)
+    
+    with open(out_file, "a") as f:
+        for chunk in triples:
+            chunk["doc_id_a"] = chunk["doc_id_a"].astype(str)
+            chunk["doc_id_b"] = chunk["doc_id_a"].map(get_negatives)
 
-    triples["doc_id_b"] = triples["doc_id_a"].map(get_negatives)
-    group_size = n_neg + 1
-    out_file = out_dir + f"/{name}.{group_size}.jsonl.gz"
-    triples.to_json(out_file, orient="records", lines=True, compression="gzip")
+            for _, row in chunk.iterrows():
+                f.write(row.to_json() + "\n")
     return f"Successfully saved to {out_file}"
 
 
