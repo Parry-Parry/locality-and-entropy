@@ -120,7 +120,7 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
         for batch in triples:
             for row in batch.itertuples():
                 try:
-                    doc_id_b = lookup[str(row.query_id)]
+                    doc_id_b = lookup[int(row.query_id)]
                 except KeyError:
                     print(f"Query ID {row.query_id} not found")
                     continue
