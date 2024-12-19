@@ -124,7 +124,7 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
                 except KeyError:
                     print(f"Query ID {row.query_id} not found")
                     continue
-                f.write(json.dumps({"query_id": row.query_id, "doc_id_a": doc_id_b, "doc_id_b": row.doc_id_b}) + "\n")
+                f.write(json.dumps({"query_id": row.query_id, "doc_id_a": row.doc_id_a, "doc_id_b": doc_id_b}) + "\n")
 
     return out_file
 
