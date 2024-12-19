@@ -71,6 +71,7 @@ def mine(
     name = model_name_or_path.replace("/", "-") if name_override is None else name_override
     if os.path.exists(out_dir + f"/{name}.scores.json.gz"):
         lookup = load_json(out_dir + f"/{name}.scores.json.gz")
+        print(lookup.items()[0])
 
     def pivot_triples(triples):
         frame = {
@@ -116,7 +117,11 @@ def mine(
         # filter if we already have scores for a qid-docno pair
         
         def filter_row(qid, docno):
-            return not (qid in lookup and docno in lookup[qid])
+            if qid not in lookup:
+                return True
+            if docno not in lookup[qid]:
+                return True
+            return False
         frame = frame[frame.apply(lambda row: filter_row(row.qid, row.docno), axis=1)]
 
         res = crossencoder.transform(frame)
