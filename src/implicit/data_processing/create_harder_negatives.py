@@ -80,7 +80,6 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
 
             # Get the positive passage ids
             qid = data["qid"]
-            print(type(qid))
             pos_pids = data["pos"]
 
             if len(pos_pids) == 0:  # Skip entries without positives passages
