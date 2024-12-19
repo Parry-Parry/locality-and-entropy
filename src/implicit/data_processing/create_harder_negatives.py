@@ -57,7 +57,7 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
             "https://huggingface.co/datasets/sentence-transformers/msmarco-hard-negatives/resolve/main/cross-encoder-ms-marco-MiniLM-L-6-v2-scores.pkl.gz",
             ce_scores_file,
         )
-    triples = pd.read_json(triples_file, lines=True, orient="records", chunksize=10000)
+    triples = pd.read_json(triples_file, lines=True, orient="records")
     logging.info("Load CrossEncoder scores dict")
     with gzip.open(ce_scores_file, "rb") as fIn:
         ce_scores = pickle.load(fIn)
