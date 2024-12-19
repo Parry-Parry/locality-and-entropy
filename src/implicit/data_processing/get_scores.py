@@ -71,7 +71,7 @@ def mine(
     name = model_name_or_path.replace("/", "-") if name_override is None else name_override
     if os.path.exists(out_dir + f"/{name}.scores.json.gz"):
         lookup = load_json(out_dir + f"/{name}.scores.json.gz")
-        print(next(iter(lookup.items())))
+        print(type(next(iter(lookup.items()))[0]))
 
     def pivot_triples(triples):
         frame = {
