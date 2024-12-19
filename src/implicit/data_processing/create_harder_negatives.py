@@ -57,7 +57,7 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
             "https://huggingface.co/datasets/sentence-transformers/msmarco-hard-negatives/resolve/main/cross-encoder-ms-marco-MiniLM-L-6-v2-scores.pkl.gz",
             ce_scores_file,
         )
-    triples = pd.read_json(triples_file, lines=True, orient="records")
+    triples = pd.read_json(triples_file, lines=True, orient="records", chunksize=100000)
     logging.info("Load CrossEncoder scores dict")
     with gzip.open(ce_scores_file, "rb") as fIn:
         ce_scores = pickle.load(fIn)
@@ -113,12 +113,16 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
             if len(neg_pids) < n_neg:
                 neg_pids = neg_pids + random.sample(all_docs, n_neg - len(neg_pids))
             lookup[data['qid']] = neg_pids
-    triples['doc_id_b'] = triples['doc_id_b'].apply(lambda x: lookup[x])
     group_size = n_neg + 1
     out_file = os.path.join(data_folder, f"ensemble.{group_size}.jsonl")
-    data.to_json(out_file, orient='records', lines=True)
+    with open(out_file, "w") as f:
+        for batch in triples:
+            batch['doc_id_b'] = batch['query_id'].apply(lambda x: lookup[x])
+            for row in batch.itertuples():
+                f.write(json.dumps({"query_id": row.query_id, "doc_id_a": row.doc_id_a, "doc_id_b": row.doc_id_b}) + "\n")
 
     return out_file
+
 
 if __name__ == "__main__":
     Fire(get_negatives)
