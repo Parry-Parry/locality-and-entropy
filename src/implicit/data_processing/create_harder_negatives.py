@@ -117,8 +117,6 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
     out_file = os.path.join(data_folder, f"ensemble.{group_size}.jsonl")
     with open(out_file, "w") as f:
         for batch in triples:
-
-            batch['doc_id_b'] = batch['query_id'].apply(lambda x: lookup[str(x)])
             for row in batch.itertuples():
                 try:
                     doc_id_b = lookup[str(row.query_id)]
