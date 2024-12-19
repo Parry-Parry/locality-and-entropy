@@ -89,7 +89,8 @@ def mine(
                 else [str(row.doc_id_b)]
             )
             query_text = queries[qid]
-
+            if qid not in lookup:
+                lookup[qid] = {}
             if doc_id_a not in lookup[qid]:
                 frame["qid"].append(qid)
                 frame["docno"].append(doc_id_a)
@@ -115,14 +116,6 @@ def mine(
     for group in triples:
         frame = pivot_triples(group)
         # filter if we already have scores for a qid-docno pair
-        
-        def filter_row(qid, docno):
-            if qid not in lookup:
-                return True
-            if docno not in lookup[qid]:
-                return True
-            return False
-        frame = frame[frame.apply(lambda row: filter_row(row.qid, row.docno), axis=1)]
 
         res = crossencoder.transform(frame)
         for row in tqdm(res.itertuples()):
