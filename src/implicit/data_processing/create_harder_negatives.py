@@ -48,7 +48,7 @@ def http_get(url: str, path: str) -> None:
     progress.close()
 
 
-def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0, data_folder="data", n_neg=16):
+def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0, data_folder="data", n_neg=15):
     all_docs = pd.DataFrame(irds.load('msmarco-passage').docs_iter()).doc_id.to_list()
     ce_scores_file = os.path.join(data_folder, "cross-encoder-ms-marco-MiniLM-L-6-v2-scores.pkl.gz")
     if not os.path.exists(ce_scores_file):
@@ -114,7 +114,8 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
                 neg_pids = neg_pids + random.sample(all_docs, n_neg - len(neg_pids))
             lookup[data['qid']] = neg_pids
     triples['doc_id_b'] = triples['doc_id_b'].apply(lambda x: lookup[x])
-    out_file = os.path.join(data_folder, f"ensemble.{n_neg}.jsonl")
+    group_size = n_neg + 1
+    out_file = os.path.join(data_folder, f"ensemble.{group_size}.jsonl")
     data.to_json(out_file, orient='records', lines=True)
 
     return out_file
