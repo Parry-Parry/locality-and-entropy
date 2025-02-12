@@ -60,7 +60,7 @@ def parse_name(name : str):
     return Item(model_type=model_type, loss_function=loss, negative_source=negative_source, negative_count=n_count)
 
 
-def inventory(directory : str, output : str = None):
+def inventory(directory : str, output : str = None, ignore_complete : bool = False):
     SOURCES = {
         'crossencoder' : [],
         'random' : [],
@@ -132,7 +132,7 @@ def inventory(directory : str, output : str = None):
         print(f"CSV written to {os.path.join(output, out_file)}")
         out_string = ''
         for row in df.itertuples():
-            if not row.complete:
+            if not row.complete or ignore_complete:
                 parsed_source = source_mapping[row.source]
                 parsed_batch = batch_size_mapping[row.negative_count]
                 parsed_loss = loss_mapping[row.loss_function]
