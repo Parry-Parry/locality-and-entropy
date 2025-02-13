@@ -94,7 +94,7 @@ def inventory(directory : str, output : str = None, ignore_complete : bool = Fal
         total = len(SOURCES[source])
         expected = len(LOSS_FUNCTIONS) * len(NEGATIVES) * 2
         print(f"Source: {source}, Total: {total}, Expected: {expected}, Percentage: {total/expected}")
-    
+
     if output is not None:
         # create a csv file with a boolean for if a required model is missing
         out = {
@@ -111,7 +111,7 @@ def inventory(directory : str, output : str = None, ignore_complete : bool = Fal
                 out['loss_function'].append(item.loss_function)
                 out['negative_count'].append(item.negative_count)
                 out['complete'].append(True)
-        
+
         for n in NEGATIVES:
             for loss in LOSS_FUNCTIONS:
                 for source in SOURCES:
@@ -148,6 +148,7 @@ def inventory(directory : str, output : str = None, ignore_complete : bool = Fal
         with open(os.path.join(output, out_file), 'w') as f:
             f.write(out_string)
         print(f"CMD written to {os.path.join(output, out_file)}")
+
 
 if __name__ == "__main__":
     Fire(inventory)
