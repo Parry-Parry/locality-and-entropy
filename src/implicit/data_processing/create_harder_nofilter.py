@@ -111,7 +111,7 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
                 neg_pids = neg_pids + random.sample(all_docs, n_neg - len(neg_pids))
             lookup[data['qid']] = neg_pids
     group_size = n_neg + 1
-    out_file = os.path.join(data_folder, f"ensemble.{group_size}.jsonl")
+    out_file = os.path.join(data_folder, f"ensemble.unfiltered.{group_size}.jsonl")
     with open(out_file, "w") as f:
         for batch in triples:
             for row in batch.itertuples():
