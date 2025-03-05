@@ -60,7 +60,7 @@ def mine(
         if length < n_neg:
             return candidates + random.sample(docs, k=n_neg - length)
         return random.sample(candidates, k=n_neg)
-    
+
     with open(out_file, "a") as f:
         for chunk in triples:
             chunk["doc_id_a"] = chunk["doc_id_a"].astype(str)
