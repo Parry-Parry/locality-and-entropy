@@ -30,7 +30,7 @@ def main():
     if os.path.exists(os.path.join(training_args.output_dir, "config.json")):
         print(f"Model already exists at {training_args.output_dir}, exiting...")
         return
-    model = Cat.from_pretrained(model_args.model_name_or_path)
+    model = Cat.from_pretrained(model_args.model_name_or_path, num_labels=2)
 
     dataset = TrainingDataset(
         data_args.training_dataset_file,
