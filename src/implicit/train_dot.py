@@ -68,7 +68,7 @@ def main():
         loss_fn=training_args.loss_fn,
     )
 
-    trainer.train()
+    trainer.train(resume_from_checkpoint=True)
     trainer.save_model(training_args.output_dir)
 
 
