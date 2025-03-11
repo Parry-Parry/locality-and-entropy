@@ -31,7 +31,7 @@ def main(
     pipe = retriever_obj % depth
 
     dataset = irds.load(ir_dataset)
-    queries = pd.DataFram(dataset.queries_iter()).rename(columns={'query_id': 'qid', 'text': 'query'})
+    queries = pd.DataFrame(dataset.queries_iter()).rename(columns={'query_id': 'qid', 'text': 'query'})
 
     result = pipe.transform(queries)
     index_path_basename = os.path.basename(index_path)
