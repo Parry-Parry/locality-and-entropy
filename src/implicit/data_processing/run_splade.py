@@ -25,7 +25,6 @@ def main(
 ):
     retriever_obj = sparse_retriever(
         index_path=index_path,
-        checkpoint=checkpoint,
         batch_size=batch_size,
         threads=threads
         )

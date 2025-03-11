@@ -16,9 +16,9 @@ for dataset in "${DATASETS[@]}"; do
 
     # depending on dataset set topics_or_res
     if [[ $dataset == *"trec-dl-2019"* ]]; then
-        INDEX_PATH="/nfs/indices/msmarco-passage.splade-ensemble-distill.pisa"
+        INDEX_PATH="/nfs/indices/msmarco-passage.splade-ensemble-distill.pisa "
     elif [[ $dataset == *"trec-dl-2020"* ]]; then
-        INDEX_PATH="/nfs/indices/msmarco-passage.splade-ensemble-distill.pisa"
+        INDEX_PATH="/nfs/indices/msmarco-passage.splade-ensemble-distill.pisa "
     elif [[ $dataset == *"trec-covid"* ]]; then
         INDEX_PATH="/nfs/indices/BEIR/trec-covid/trec-covid.splade-ensemble-distill.pisa"
     fi
