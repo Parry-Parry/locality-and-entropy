@@ -10,7 +10,7 @@ def batch_run_topics(
     topics_or_res: str = None,
     batch_size: int = 512,
     text_field: str = "text",
-    overwrite: bool = False,
+    dont_overwrite: bool = False,
 ):
     print(
         f"Running {ir_dataset} with models in {model_directory} and saving to {output_directory}"
@@ -30,7 +30,7 @@ def batch_run_topics(
             topics_or_res=topics_or_res,
             batch_size=batch_size,
             text_field=text_field,
-            overwrite=overwrite,
+            dont_overwrite=dont_overwrite,
             cat="dot" not in model_name,
         )
 
