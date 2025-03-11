@@ -98,11 +98,11 @@ def run_topics(
     batch_size: int = 256,
     text_field: str = "text",
     cat: bool = False,
-    overwrite: bool = False,
+    dont_overwrite: bool = False,
 ):
     if not os.path.exists(f"{model_name_or_path}/config.json"):
         return f"Model not found at specified path {model_name_or_path}!"
-    if not overwrite and os.path.exists(out_path):
+    if not dont_overwrite and os.path.exists(out_path):
         return "File already exists!"
     try:
         topics_or_res = (
