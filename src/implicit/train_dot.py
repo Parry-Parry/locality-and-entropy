@@ -68,7 +68,14 @@ def main():
         loss_fn=training_args.loss_fn,
     )
 
-    trainer.train(resume_from_checkpoint=True)
+    # check for any checkpoints in output_dir
+    if os.path.exists(training_args.output_dir):
+        paths = os.listdir(training_args.output_dir)
+        paths = [path for path in paths if "checkpoint" in path]
+        if paths:
+            trainer.train(resume_from_checkpoint=True)
+        else:
+            trainer.train()
     trainer.save_model(training_args.output_dir)
 
 
