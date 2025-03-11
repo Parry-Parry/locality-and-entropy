@@ -31,9 +31,5 @@ if [ ! -z "$TEXT_FIELD" ]; then
     CMD="$CMD --text_field $TEXT_FIELD"
 fi
 
-if [ ! -z "$OVERWRITE" ]; then
-    CMD="$CMD --overwrite $OVERWRITE"
-fi
-
 # Execute the command
 eval $CMD

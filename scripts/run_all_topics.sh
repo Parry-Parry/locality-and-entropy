@@ -7,7 +7,6 @@ TEXT_FIELD="text"
 # Required arguments
 # Optional arguments with empty defaults
 TOPICS_OR_RES=$2
-OVERWRITE=$3
 
 mkdir -p $OUTPUT_DIRECTORY
 
@@ -32,10 +31,6 @@ for dataset in "${DATASETS[@]}"; do
 
     if [ ! -z "$TEXT_FIELD" ]; then
         CMD="$CMD --text_field $TEXT_FIELD"
-    fi
-
-    if [ ! -z "$OVERWRITE" ]; then
-        CMD="$CMD --dont_overwrite $OVERWRITE"
     fi
 
     # Execute the command
