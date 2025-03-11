@@ -35,7 +35,7 @@ for dataset in "${DATASETS[@]}"; do
     fi
 
     if [ ! -z "$OVERWRITE" ]; then
-        CMD="$CMD --overwrite $OVERWRITE"
+        CMD="$CMD --dont_overwrite $OVERWRITE"
     fi
 
     # Execute the command
