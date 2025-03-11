@@ -19,7 +19,6 @@ def main(
         index_path: str,
         output_directory: str,
         ir_dataset: str,
-        checkpoint: str = None,
         batch_size: int = 128,
         threads: int = 4,
         depth: int = 1000,
