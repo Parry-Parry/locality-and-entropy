@@ -22,11 +22,11 @@ for dataset in "${DATASETS[@]}"; do
 
     # depending on dataset set topics_or_res
     if [[ $dataset == *"trec-dl-2019"* ]]; then
-        TOPICS_OR_RES="runs/msmarco_passage_trec_dl_2019_judged_crossencoder.res.gz"
+        TOPICS_OR_RES="data/splade.msmarco-passage-trec-dl-2019-judged.1000.tsv.gz"
     elif [[ $dataset == *"trec-dl-2020"* ]]; then
-        TOPICS_OR_RES="runs/msmarco_passage_trec_dl_2020_judged_crossencoder.res.gz"
+        TOPICS_OR_RES="data/splade.msmarco-passage-trec-dl-2020-judged.1000.tsv.gz"
     elif [[ $dataset == *"trec-covid"* ]]; then
-        TOPICS_OR_RES="runs/beir_trec_covid_crossencoder.res.gz"
+        TOPICS_OR_RES="data/splade.beir-trec-covid.1000.tsv.gz"
     fi
 
     CMD="$CMD --topics_or_res $TOPICS_OR_RES"
