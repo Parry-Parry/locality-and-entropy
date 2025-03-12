@@ -28,7 +28,7 @@ def main(
         batch_size=batch_size,
         threads=threads
         )
-    pipe = retriever_obj % depth
+    pipe = retriever_obj
 
     dataset = irds.load(ir_dataset)
     queries = pd.DataFrame(dataset.queries_iter()).rename(columns={'query_id': 'qid', 'text': 'query'})
