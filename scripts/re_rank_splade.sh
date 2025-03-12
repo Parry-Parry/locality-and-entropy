@@ -1,7 +1,7 @@
 #!/bin/bash
 
 MODEL_DIRECTORY="checkpoints"
-OUTPUT_DIRECTORY="rerank_runs"
+OUTPUT_DIRECTORY="rerank_splade_runs"
 BATCH_SIZE=512
 TEXT_FIELD="text"
 # Required arguments
