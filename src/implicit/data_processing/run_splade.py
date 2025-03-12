@@ -34,12 +34,11 @@ def main(
     queries = pd.DataFrame(dataset.queries_iter()).rename(columns={'query_id': 'qid', 'text': 'query'})
 
     result = pipe.transform(queries)
-    index_path_basename = os.path.basename(index_path)
     if len(result) == 0:
         print("No results to write")
         return
-
-    output_file = os.path.join(output_directory, f"splade.{index_path_basename}.{depth}.tsv.gz")
+    formatted_dataset = ir_dataset.replace("/", "-")
+    output_file = os.path.join(output_directory, f"splade.{formatted_dataset}.{depth}.tsv.gz")
     pt.io.write_results(result, output_file)
     print(f"Results written to {output_file}")
     return 0
