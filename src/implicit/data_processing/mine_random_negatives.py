@@ -115,7 +115,7 @@ def mine(
         res = crossencoder.transform(frame)
         for row in res.itertuples():
             lookup[row.qid][row.docno] = row.score
-    
+
     with open(out_file, "w") as f:
         for (query_id, pos), negs in tqdm.tqdm(zip(query_pos_lookup.items(), negatives)):
             for doc_id in pos:

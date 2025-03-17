@@ -73,7 +73,7 @@ def main():
         paths = os.listdir(training_args.output_dir)
         paths = [path for path in paths if "checkpoint" in path]
         if paths:
-            trainer.train(resume_from_checkpoint=True)
+            trainer.train(resume_from_checkpoint=False)
         else:
             trainer.train()
     trainer.save_model(training_args.output_dir)
