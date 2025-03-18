@@ -147,11 +147,14 @@ def run_topics(
         pd.DataFrame(ir_dataset.queries_iter()).set_index("query_id").text.to_dict()
     )
     topics_or_res["query"] = topics_or_res["qid"].map(lambda qid: queries[qid])
-    model = (
-        load_bi_encoder(model_name_or_path, batch_size=batch_size)
-        if not cat
-        else load_cross_encoder(model_name_or_path, batch_size=batch_size)
-    )
+    try:
+        model = (
+            load_bi_encoder(model_name_or_path, batch_size=batch_size)
+            if not cat
+            else load_cross_encoder(model_name_or_path, batch_size=batch_size)
+        )
+    except Exception as e:
+        return f"Error loading model: {e}"
 
     if not index:
         docs = pd.DataFrame(ir_dataset.docs_iter()).set_index("doc_id").text.to_dict()
