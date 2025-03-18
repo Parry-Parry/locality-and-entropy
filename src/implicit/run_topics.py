@@ -101,7 +101,16 @@ def run_topics(
     dont_overwrite: bool = False,
 ):
     if not os.path.exists(f"{model_name_or_path}/config.json"):
-        return f"Model not found at specified path {model_name_or_path}!"
+        # find most recent checkpoint
+        model_name_or_path = os.path.join(
+            model_name_or_path, max(os.listdir(model_name_or_path))
+        )
+        if "checkpoint" not in model_name_or_path:
+            return f"Model not found at specified path {model_name_or_path}!"
+        output_directory = os.path.dirname(out_path)
+        basename = os.path.basename(out_path)
+        basename = f"tmp-{basename}"
+        out_path = os.path.join(output_directory, basename)
     if not dont_overwrite and os.path.exists(out_path):
         return "File already exists!"
     try:
