@@ -109,7 +109,9 @@ def run_topics(
             return f"Model not found at specified path {model_name_or_path}!"
         output_directory = os.path.dirname(out_path)
         basename = os.path.basename(out_path)
-        basename = f"tmp-{basename}"
+        # get checkpoint number
+        checkpoint_number = model_name_or_path.split("-")[-1]
+        basename = f"tmp-{checkpoint_number}-{basename}"
         out_path = os.path.join(output_directory, basename)
     if not dont_overwrite and os.path.exists(out_path):
         return "File already exists!"
