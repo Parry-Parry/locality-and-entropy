@@ -89,6 +89,19 @@ def load_run(system_name, dataset_id, trec_file=None):
         )
 
 
+def get_latest_checkpoint(model_name_or_path):
+    checkpoints = [
+        d for d in os.listdir(model_name_or_path)
+        if d.startswith("checkpoint-") and os.path.isdir(os.path.join(model_name_or_path, d))
+    ]
+    if not checkpoints:
+        return f"Model not found at specified path {model_name_or_path}!"
+
+    # Sort by the checkpoint number (assuming format checkpoint-XXXX)
+    latest_checkpoint = max(checkpoints, key=lambda x: int(x.split("-")[-1]))
+    return os.path.join(model_name_or_path, latest_checkpoint)
+
+
 def run_topics(
     ir_dataset: str,
     model_name_or_path: str,
@@ -102,10 +115,8 @@ def run_topics(
 ):
     if not os.path.exists(f"{model_name_or_path}/config.json"):
         # find most recent checkpoint
-        model_name_or_path = os.path.join(
-            model_name_or_path, max(os.listdir(model_name_or_path))
-        )
-        if "checkpoint" not in model_name_or_path:
+        model_name_or_path = get_latest_checkpoint(model_name_or_path)
+        if 'not found' in model_name_or_path:
             return f"Model not found at specified path {model_name_or_path}!"
         output_directory = os.path.dirname(out_path)
         basename = os.path.basename(out_path)
