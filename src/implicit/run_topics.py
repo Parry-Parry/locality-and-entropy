@@ -104,7 +104,7 @@ def get_latest_checkpoint(model_name_or_path):
     # Find the latest valid checkpoint
     for checkpoint in checkpoints:
         checkpoint_path = os.path.join(model_name_or_path, checkpoint)
-        if os.path.exists(os.path.join(checkpoint_path, "config.json")):
+        if os.path.exists(os.path.join(checkpoint_path, "config.json")) and os.path.exists(os.path.join(checkpoint_path, "model.safetensors")):
             return checkpoint_path
     
     return f"Model not found at specified path {model_name_or_path}!"
