@@ -94,12 +94,20 @@ def get_latest_checkpoint(model_name_or_path):
         d for d in os.listdir(model_name_or_path)
         if d.startswith("checkpoint-") and os.path.isdir(os.path.join(model_name_or_path, d))
     ]
+    
     if not checkpoints:
         return f"Model not found at specified path {model_name_or_path}!"
+    
+    # Sort by checkpoint number in descending order (newest first)
+    checkpoints.sort(key=lambda x: int(x.split("-")[-1]), reverse=True)
 
-    # Sort by the checkpoint number (assuming format checkpoint-XXXX)
-    latest_checkpoint = max(checkpoints, key=lambda x: int(x.split("-")[-1]))
-    return os.path.join(model_name_or_path, latest_checkpoint)
+    # Find the latest valid checkpoint
+    for checkpoint in checkpoints:
+        checkpoint_path = os.path.join(model_name_or_path, checkpoint)
+        if os.path.exists(os.path.join(checkpoint_path, "config.json")):
+            return checkpoint_path
+    
+    return f"Model not found at specified path {model_name_or_path}!"
 
 
 def run_topics(
