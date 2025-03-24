@@ -1,6 +1,6 @@
 from autoqrels.oneshot import DuoPrompt
 import pandas as pd
-from typing import Dict
+from typing import Dict, List
 import ir_datasets as irds
 from tqdm import tqdm
 from collections import defaultdict
