@@ -17,8 +17,6 @@ def main():
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    print(training_args.group_size)
-
     training_data_file = data_args.training_dataset_file.split("/")[-1].replace(
         ".jsonl", ""
     )
