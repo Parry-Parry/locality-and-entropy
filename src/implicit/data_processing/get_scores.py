@@ -4,6 +4,7 @@ import ir_datasets as irds
 import pandas as pd
 import pyterrier as pt
 from tqdm import tqdm
+import json
 
 if not pt.started():
     pt.init()
@@ -116,7 +117,7 @@ def mine(
     with open(file, "r") as f:
         buffer = []
         for line in f:
-            buffer.append(line)
+            buffer.append(json.loads(line))
             if len(buffer) == chunk_size:
                 frame = pivot_triples(buffer)
                 # filter if we already have scores for a qid-docno pair
