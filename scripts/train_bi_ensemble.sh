@@ -31,7 +31,7 @@ CMD="python -m implicit.train_dot \
 --num_train_epochs 1 \
 --training_dataset_file $TRIPLE_FILE \
 --group_size $GROUP_SIZE \
---per_device_train_batch_size $BATCH_SIZE \
+--per_device_train_batch_size $BASE_BATCH_SIZE \
 --gradient_accumulation_steps 1 \
 --ir_dataset "msmarco-passage/train/triples-small" \
 --logging_steps 1000 \
