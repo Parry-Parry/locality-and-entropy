@@ -20,13 +20,13 @@ SOURCES = {
         'crossencoder' : [],
         'random' : [],
         'bm25' : [],
-        'ensemble' : []
+     #   'ensemble' : []
     }
 source_mapping = {
     'crossencoder' : 'teacher',
     'random' : 'random',
     'bm25' : 'bm25',
-    'ensemble' : 'ensemble'
+ #   'ensemble' : 'ensemble'
 }
 
 
