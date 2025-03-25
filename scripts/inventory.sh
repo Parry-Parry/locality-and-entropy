@@ -1,6 +1,10 @@
 DIRECTORY='checkpoints'
 OUTPUT='data'
+IGNORE=$1
 
-python -m implicit.data_processing.get_inventory \
+CMD="python -m implicit.data_processing.get_inventory \
     --directory $DIRECTORY \
-    --output $OUTPUT
+    --output $OUTPUT"
+
+if [ ! -z "$IGNORE" ]; then
+    CMD="$CMD --ignore_complete"
