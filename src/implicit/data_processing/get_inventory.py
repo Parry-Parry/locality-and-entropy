@@ -2,7 +2,7 @@ from fire import Fire
 import os
 from dataclasses import dataclass
 
-NEGATIVES = [16, 8, 4, 2]
+NEGATIVES = [16]
 batch_size_mapping = {
     16 : 8,
     8 : 8,
