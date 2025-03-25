@@ -142,7 +142,7 @@ def inventory(directory : str, output : str = None, ignore_complete : bool = Fal
                 else:
                     script = f'./scripts/train_{model_type}_{parsed_source}.sh'
 
-                args = [script, parsed_loss, str(row.negative_count), str(parsed_batch)]
+                args = [script, parsed_loss, str(row.negative_count)]
                 out_string += ' '.join(args) + '\n'
         out_file = 'missing_models.txt'
         with open(os.path.join(output, out_file), 'w') as f:
