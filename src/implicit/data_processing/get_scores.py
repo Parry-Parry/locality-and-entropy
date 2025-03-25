@@ -120,6 +120,9 @@ def mine(
             buffer.append(json.loads(line))
             if len(buffer) == chunk_size:
                 frame = pivot_triples(buffer)
+                if len(frame) == 0:
+                    buffer = []
+                    continue
                 # filter if we already have scores for a qid-docno pair
                 res = crossencoder.transform(frame)
                 for row in tqdm(res.itertuples()):
