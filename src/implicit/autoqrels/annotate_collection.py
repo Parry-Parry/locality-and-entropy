@@ -71,7 +71,7 @@ def mine(
                     out.append(element)
             yield out
 
-    logging.info("Loading crossencoder...")
+    logging.info("Loading labeller...")
     labeller = load_labeller(
         dataset,
         model_name_or_path,
