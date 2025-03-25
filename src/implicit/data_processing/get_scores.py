@@ -80,13 +80,13 @@ def mine(
             "query": [],
             "text": [],
         }
-        for row in tqdm(triples.itertuples(), desc="Pivoting triples"):
-            qid = str(row.query_id)
-            doc_id_a = str(row.doc_id_a)
+        for row in tqdm(triples, desc="Pivoting triples"):
+            qid = str(row['query_id'])
+            doc_id_a = str(row['doc_id_a'])
             doc_id_b = (
-                [str(x) for x in row.doc_id_b]
-                if type(row.doc_id_b) == list
-                else [str(row.doc_id_b)]
+                [str(x) for x in row['doc_id_b']]
+                if type(row['doc_id_b']) is list
+                else [str(row['doc_id_b'])]
             )
             query_text = queries[qid]
             if qid not in lookup:
@@ -107,19 +107,23 @@ def mine(
         frame["score"] = [0.0] * len(frame["qid"])
         return pd.DataFrame(frame)
 
-    triples = pd.read_json(file, lines=True, orient="records", chunksize=chunk_size)
     logging.info("Loading crossencoder...")
     crossencoder = load_crossencoder(
         model_name_or_path, batch_size=batch_size, cache=cache
     )
 
-    for group in triples:
-        frame = pivot_triples(group)
-        # filter if we already have scores for a qid-docno pair
-
-        res = crossencoder.transform(frame)
-        for row in tqdm(res.itertuples()):
-            lookup[row.qid][row.docno] = row.score
+    # read json lines by line in chunks using a buffer
+    with open(file, "r") as f:
+        buffer = []
+        for line in f:
+            buffer.append(line)
+            if len(buffer) == chunk_size:
+                frame = pivot_triples(buffer)
+                # filter if we already have scores for a qid-docno pair
+                res = crossencoder.transform(frame)
+                for row in tqdm(res.itertuples()):
+                    lookup[row.qid][row.docno] = row.score
+                buffer = []
     if name_override:
         name = name_override
     save_json(lookup, out_dir + f"/{name}.scores.json.gz")
