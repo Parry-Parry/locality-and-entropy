@@ -23,9 +23,9 @@ SOURCES = {
         'ensemble' : []
     }
 source_mapping = {
-    'crossencoder' : 'both',
+    'crossencoder' : 'teacher',
     'random' : 'random',
-    'bm25' : 'both',
+    'bm25' : 'bm25',
     'ensemble' : 'ensemble'
 }
 
@@ -137,10 +137,7 @@ def inventory(directory : str, output : str = None, ignore_complete : bool = Fal
                 parsed_batch = batch_size_mapping[row.negative_count]
                 parsed_loss = loss_mapping[row.loss_function]
                 model_type = 'bi' if row.model_type == 'dot' else 'cross'
-                if parsed_source == 'both':
-                    script =  f'./scripts/train_{parsed_source}_{model_type}.sh'
-                else:
-                    script = f'./scripts/train_{model_type}_{parsed_source}.sh'
+                script = f'./scripts/train_{model_type}_{parsed_source}.sh'
 
                 args = [script, parsed_loss, str(row.negative_count)]
                 out_string += ' '.join(args) + '\n'
