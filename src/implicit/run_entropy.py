@@ -66,7 +66,7 @@ def mine(
                 frame["qid"].append(qid)
                 frame["docno"].append(id)
 
-                frame["score"].extend([lookup[qid].get(docno, 0.0) for docno in [doc_id_a] + doc_id_b])
+            frame["score"].extend([lookup[qid].get(docno, 0.0) for docno in [doc_id_a] + doc_id_b])
         return pd.DataFrame(frame)
 
 
