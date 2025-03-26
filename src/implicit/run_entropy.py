@@ -82,7 +82,7 @@ def mine(
                     buffer = []
                     continue
 
-                for qid, group in frame.groupby("qid"):
+                for qid, group in tqdm(frame.groupby("qid")):
                     scores = softmax(group["score"].values)
                     entropy_lookup[qid] = entropy(scores)
 
