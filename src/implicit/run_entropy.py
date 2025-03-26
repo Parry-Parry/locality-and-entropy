@@ -44,6 +44,7 @@ def mine(
         frame = {
             "qid": [],
             "docno": [],
+            "score": [],
         }
         for row in tqdm(triples, desc="Pivoting triples"):
             qid = str(row['query_id'])
