@@ -5,6 +5,7 @@ from rankers import (
     RankerTrainer,
     Dot,
     TrainingDataset,
+    TestDataset,
     DotDataCollator,
 )
 import os
@@ -56,6 +57,14 @@ def main():
         else:
             trainer.train()
     trainer.save_model(training_args.output_dir)
+
+    if data_args.test_dataset_file:
+        test_dataset = TestDataset(
+            data_args.test_data,
+            corpus=data_args.test_ir_dataset,
+            lazy_load_text=True,
+        )
+        trainer.evaluate(test_dataset)
 
 
 if __name__ == "__main__":
