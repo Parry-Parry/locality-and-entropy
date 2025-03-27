@@ -38,7 +38,10 @@ CMD="python -m implicit.train_cat \
 --save_steps 100000 \
 --dataloader_num_workers 4 \
 --fp16 t \
---report_to wandb"
+--report_to wandb
+--test_dataset_file "data/msmarco-passage-trec-dl-2019-judged-bm25.run.gz" \
+--test_ir_dataset "msmarco-passage/trec-dl-2019/judged" \
+"
 
 # if loss function != lce, add teacher file
 
