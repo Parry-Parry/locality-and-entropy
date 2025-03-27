@@ -35,7 +35,7 @@ def main():
         corpus=data_args.ir_dataset,
         no_positive=data_args.no_positive,
         teacher_file=data_args.teacher_file,
-        lazy_load_text=False,
+        lazy_load_text=True,
     )
     collate_fn = DotDataCollator(model.tokenizer)
 
