@@ -41,7 +41,6 @@ CMD="python -m implicit.train_dot \
 --report_to wandb
 --test_dataset_file "data/msmarco-passage-trec-dl-2019-judged-bm25.run.gz" \
 --test_ir_dataset "msmarco-passage/trec-dl-2019/judged" \
---eval_metrics ["nDCG()@10"] \
 "
 
 # if loss function != lce, add teacher file

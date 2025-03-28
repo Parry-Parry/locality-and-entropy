@@ -16,7 +16,12 @@ def main():
     parser = HfArgumentParser(
         (RankerModelArguments, RankerDataArguments, RankerTrainingArguments)
     )
+
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+
+    if data_args.test_dataset_file:
+        from ir_measures import nDCG
+        training_args.eval_ir_measures = [nDCG@10]
 
     training_data_file = data_args.training_dataset_file.split("/")[-1].replace(
         ".jsonl", ""
