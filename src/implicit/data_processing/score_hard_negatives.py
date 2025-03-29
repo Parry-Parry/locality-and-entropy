@@ -10,7 +10,7 @@ if not pt.started():
     pt.init()
 import logging
 import os
-import random
+import gzip
 from pyterrier_caching import ScorerCache
 from implicit.util import save_json, load_json
 
@@ -114,7 +114,7 @@ def mine(
     )
 
     # read json lines by line in chunks using a buffer
-    with open(file, "r") as f:
+    with gzip.open(file, "rt") as f:
         buffer = []
         for line in f:
             buffer.append(json.loads(line))
