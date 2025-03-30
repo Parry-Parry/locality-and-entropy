@@ -136,6 +136,7 @@ def mine(
                     buffer = []
                     continue
                 res = crossencoder.transform(frame)
+                print(res.head())
                 for row in tqdm(res.itertuples()):
                     lookup[row.qid][row.docno] = row.score
                 buffer = []
