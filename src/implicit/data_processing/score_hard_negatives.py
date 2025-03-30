@@ -61,7 +61,7 @@ def mine(
     model_name_or_path: str = None,
     batch_size: int = 512,
     cache: str = None,
-    chunk_batches: int = 10000,
+    chunk_batches: int = 100,
     name_override : str = 'ensemble.all'
 ):
     chunk_size = chunk_batches * batch_size
