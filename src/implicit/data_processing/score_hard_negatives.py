@@ -11,7 +11,6 @@ if not pt.started():
 import logging
 import os
 import gzip
-from pyterrier_caching import ScorerCache
 from implicit.util import save_json, load_json
 
 
@@ -45,12 +44,6 @@ def load_crossencoder(
     model = CatTransformer.from_pretrained(
         model_name_or_path, batch_size=batch_size, verbose=verbose
     )
-    if cache is not None:
-        cached_scorer = ScorerCache(cache, model)
-        if not cached_scorer.built():
-            dataset = pt.get_dataset("irds:msmarco-passage")
-            cached_scorer.build(dataset.get_corpus_iter())
-        return cached_scorer
     return model
 
 
