@@ -87,7 +87,7 @@ def mine(
         for row in tqdm(triples, desc="Pivoting triples"):
             print("Pivoting row")
             qid = str(row['qid'])
-            doc_id_a = str(row['pos'])
+            doc_id_a = str(row['pos'][0])
 
             negs = row['neg']
             doc_id_b = set()
