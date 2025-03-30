@@ -121,6 +121,7 @@ def mine(
     # read json lines by line in chunks using a buffer
     with gzip.open(file, "rt") as f:
         total_lines = sum(1 for _ in f)
+        f.seek(0)
         remaining_lines = total_lines
         print(f"reading file with chunk size {chunk_size}, total lines {total_lines}")
         buffer = []
