@@ -5,7 +5,7 @@ import pandas as pd
 import pyterrier as pt
 from tqdm import tqdm
 import json
-
+import numpy as np
 if not pt.started():
     pt.init()
 import logging
@@ -59,11 +59,16 @@ def mine(
     dataset: str,
     out_dir: str,
     model_name_or_path: str = None,
+    N_DOCS: int = 12000000,
+    runtime_batch_size: int = 8,
+    runtime_group_size: int = 16,
     batch_size: int = 512,
     cache: str = None,
     chunk_batches: int = 10,
     name_override : str = 'ensemble.all'
 ):
+    num_steps = N_DOCS // (runtime_batch_size * runtime_group_size)
+    num_queries = num_steps * runtime_batch_size
     chunk_size = chunk_batches * batch_size
     dataset = irds.load(dataset)
     queries = pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
@@ -121,11 +126,15 @@ def mine(
     # read json lines by line in chunks using a buffer
     with gzip.open(file, "rt") as f:
         total_lines = sum(1 for _ in f)
+        # random num queries to read
+        relevant_lines = np.random.choice(total_lines, num_queries, replace=False)
         f.seek(0)
-        remaining_lines = total_lines
-        #print(f"reading file with chunk size {chunk_size}, total lines {total_lines}")
+        remaining_lines = len(relevant_lines)
+        print(f"reading file with chunk size {chunk_size}, total lines {remaining_lines}")
         buffer = []
-        for line in f:
+        for i, line in enumerate(f):
+            if i not in relevant_lines:
+                continue
             #print("Reading line")
             buffer.append(json.loads(line))
             buffer_len = len(buffer)
