@@ -68,8 +68,13 @@ def mine(
     dataset = irds.load(dataset)
     queries = pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
-    lookup = defaultdict(dict)
     name = name_override
+
+    out_file = out_dir + f"/{name}.scores.json.gz"
+    if os.path.exists(out_file):
+        lookup = load_json(out_file)
+    else:
+        lookup = defaultdict(dict)
 
     def pivot_triples(triples):
         frame = {
