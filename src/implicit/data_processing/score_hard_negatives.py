@@ -122,7 +122,7 @@ def mine(
         for line in f:
             buffer.append(json.loads(line))
             if len(buffer) == chunk_size:
-                print(buffer[:10]))
+                print(buffer[:10])
                 frame = pivot_triples(buffer)
                 if len(frame) == 0:
                     buffer = []
