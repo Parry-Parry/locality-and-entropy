@@ -83,7 +83,9 @@ def mine(
             "query": [],
             "text": [],
         }
+        print("Pivoting triples")
         for row in tqdm(triples, desc="Pivoting triples"):
+            print("Pivoting row")
             qid = str(row['qid'])
             doc_id_a = str(row['pos'])
 
@@ -107,7 +109,7 @@ def mine(
                     frame["docno"].append(id)
                     frame["text"].append(docs[id])
                     frame["query"].append(query_text)
-
+        print("Pivoting done")
         frame["score"] = [0.0] * len(frame["qid"])
         return pd.DataFrame(frame)
 
@@ -123,8 +125,10 @@ def mine(
         print(f"reading file with chunk size {chunk_size}, total lines {total_lines}")
         buffer = []
         for line in f:
+            print("Reading line")
             buffer.append(json.loads(line))
             buffer_len = len(buffer)
+            print(f"Buffer length: {buffer_len}")
             if buffer_len >= chunk_size or remaining_lines < chunk_size:
                 remaining_lines -= buffer_len
                 frame = pivot_triples(buffer)
