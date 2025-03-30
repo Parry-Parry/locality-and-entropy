@@ -64,7 +64,7 @@ def mine(
     runtime_group_size: int = 16,
     batch_size: int = 512,
     cache: str = None,
-    chunk_batches: int = 10,
+    chunk_batches: int = 100,
     name_override : str = 'ensemble.all'
 ):
     num_steps = N_DOCS // (runtime_batch_size * runtime_group_size)
