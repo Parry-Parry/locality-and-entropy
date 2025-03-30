@@ -120,7 +120,6 @@ def mine(
                 if len(frame) == 0:
                     buffer = []
                     continue
-                # filter if we already have scores for a qid-docno pair
                 res = crossencoder.transform(frame)
                 for row in tqdm(res.itertuples()):
                     lookup[row.qid][row.docno] = row.score
