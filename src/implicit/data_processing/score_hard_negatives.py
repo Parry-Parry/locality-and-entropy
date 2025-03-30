@@ -70,9 +70,6 @@ def mine(
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
     lookup = defaultdict(dict)
     name = name_override
-    if os.path.exists(out_dir + f"/{name}.scores.json.gz"):
-        lookup = load_json(out_dir + f"/{name}.scores.json.gz")
-        print(type(next(iter(lookup.items()))[0]))
 
     def pivot_triples(triples):
         frame = {
@@ -128,8 +125,6 @@ def mine(
                 for row in tqdm(res.itertuples()):
                     lookup[row.qid][row.docno] = row.score
                 buffer = []
-    if name_override:
-        name = name_override
     save_json(lookup, out_dir + f"/{name}.scores.json.gz")
 
     return f"Successfully saved to {out_dir}"
