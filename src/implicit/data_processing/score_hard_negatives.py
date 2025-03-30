@@ -127,7 +127,7 @@ def mine(
     with gzip.open(file, "rt") as f:
         total_lines = sum(1 for _ in f)
         # random num queries to read
-        relevant_lines = np.random.choice(total_lines, num_queries, replace=False)
+        relevant_lines = set(np.random.choice(total_lines, num_queries, replace=False))
         f.seek(0)
         remaining_lines = len(relevant_lines)
         print(f"reading file with chunk size {chunk_size}, total lines {remaining_lines}")
