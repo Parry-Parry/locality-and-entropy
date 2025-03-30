@@ -86,11 +86,12 @@ def mine(
         for row in tqdm(triples, desc="Pivoting triples"):
             qid = str(row['qid'])
             doc_id_a = str(row['pos'])
-            doc_id_b = (
-                [str(x) for x in row['neg']]
-                if type(row['neg']) is list
-                else [str(row['neg'])]
-            )
+
+            negs = row['neg']
+            doc_id_b = set()
+            for _, idx in negs.items():
+                doc_id_b.update([str(x) for x in idx])
+
             query_text = queries[qid]
             if qid not in lookup:
                 lookup[qid] = {}
