@@ -56,6 +56,7 @@ def mine(
     runtime_batch_size: int = 8,
     runtime_group_size: int = 16,
     batch_size: int = 512,
+    cache_every: int = 50,
     cache: str = None,
     chunk_batches: int = 10,
     name_override : str = 'ensemble.all'
@@ -117,6 +118,7 @@ def mine(
     )
 
     # read json lines by line in chunks using a buffer
+    N_CHUNKS = 0
     with gzip.open(file, "rt") as f:
         total_lines = sum(1 for _ in f)
         # random num queries to read
@@ -133,6 +135,7 @@ def mine(
             buffer_len = len(buffer)
             #print(f"Buffer length: {buffer_len}")
             if buffer_len >= chunk_size or remaining_lines < chunk_size:
+                N_CHUNKS += 1
                 remaining_lines -= buffer_len
                 frame = pivot_triples(buffer)
                 if len(frame) == 0:
@@ -143,6 +146,8 @@ def mine(
                 for row in tqdm(res.itertuples()):
                     lookup[row.qid][row.docno] = row.score
                 buffer = []
+                if N_CHUNKS % cache_every == 0 and N_CHUNKS > 0:
+                    save_json(lookup, out_dir + f"/{name}.scores.json.gz")
     save_json(lookup, out_dir + f"/{name}.scores.json.gz")
 
     return f"Successfully saved to {out_dir}"
