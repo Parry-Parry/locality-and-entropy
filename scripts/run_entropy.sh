@@ -4,7 +4,7 @@ DATASET="msmarco-passage/train/triples-small"
 
 FILE=$OUTPUT_DIR/$MODEL.16.jsonl
 
-MODELS=("bm25" "crossencoder" "ensemble", "random")
+MODELS=("bm25" "crossencoder" "ensemble" "random")
 
 for MODEL in ${MODELS[@]}; do
     python -m implicit.run_entropy \
