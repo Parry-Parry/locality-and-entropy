@@ -56,7 +56,7 @@ def mine(
     runtime_batch_size: int = 8,
     runtime_group_size: int = 16,
     batch_size: int = 512,
-    cache_every: int = 50,
+    cache_every: int = 10,
     cache: str = None,
     chunk_batches: int = 10,
     name_override : str = 'ensemble.all'
@@ -86,7 +86,14 @@ def mine(
         for row in tqdm(triples, desc="Pivoting triples"):
             #print("Pivoting row")
             qid = str(row['qid'])
-            doc_id_a = str(row['pos'][0])
+            if type(row['pos']) is list and len(row['pos']) > 0:
+                doc_id_a = str(row['pos'][0])
+            elif type(row['pos']) is str:
+                doc_id_a = row['pos']
+            elif type(row['pos']) is int:
+                doc_id_a = str(row['pos'])
+            else:
+                continue
 
             negs = row['neg']
             doc_id_b = set()
