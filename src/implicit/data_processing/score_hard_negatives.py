@@ -87,7 +87,7 @@ def mine(
             #print("Pivoting row")
             qid = str(row['qid'])
             if type(row['pos']) is list and len(row['pos']) > 0:
-                doc_id_a = str(row['pos'][0])
+                doc_id_a = [str(x) for x in row['pos']]
             elif type(row['pos']) is str:
                 doc_id_a = row['pos']
             elif type(row['pos']) is int:
@@ -103,11 +103,19 @@ def mine(
             query_text = queries[qid]
             if qid not in lookup:
                 lookup[qid] = {}
-            if doc_id_a not in lookup[qid]:
-                frame["qid"].append(qid)
-                frame["docno"].append(doc_id_a)
-                frame["text"].append(docs[doc_id_a])
-                frame["query"].append(query_text)
+            if type(doc_id_a) is list:
+                for id in doc_id_a:
+                    if id not in lookup[qid]:
+                        frame["qid"].append(qid)
+                        frame["docno"].append(id)
+                        frame["text"].append(docs[id])
+                        frame["query"].append(query_text)
+            else:
+                if doc_id_a not in lookup[qid]:
+                    frame["qid"].append(qid)
+                    frame["docno"].append(doc_id_a)
+                    frame["text"].append(docs[doc_id_a])
+                    frame["query"].append(query_text)
 
             for id in doc_id_b:
                 if id not in lookup[qid]:
