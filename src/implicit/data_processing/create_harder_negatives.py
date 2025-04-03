@@ -10,6 +10,7 @@ from fire import Fire
 import pandas as pd
 import ir_datasets as irds
 import random
+from rankers._util import load_json
 
 def http_get(url: str, path: str) -> None:
     """
@@ -50,7 +51,7 @@ def http_get(url: str, path: str) -> None:
 
 def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0, data_folder="data", n_neg=15):
     all_docs = pd.DataFrame(irds.load('msmarco-passage').docs_iter()).doc_id.to_list()
-    ce_scores_file = os.path.join(data_folder, "cross-encoder-ms-marco-MiniLM-L-6-v2-scores.pkl.gz")
+    ce_scores_file = os.path.join(data_folder, "ensemble.all.scores.json.gz")
     if not os.path.exists(ce_scores_file):
         logging.info("Download cross-encoder scores file")
         http_get(
@@ -59,8 +60,7 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
         )
     triples = pd.read_json(triples_file, lines=True, orient="records", chunksize=100000)
     logging.info("Load CrossEncoder scores dict")
-    with gzip.open(ce_scores_file, "rb") as fIn:
-        ce_scores = pickle.load(fIn)
+    ce_scores = load_json(ce_scores_file)
 
     # As training data we use hard-negatives that have been mined using various systems
     train_file_path = os.path.join(data_folder, "msmarco-hard-negatives.jsonl.gz")
