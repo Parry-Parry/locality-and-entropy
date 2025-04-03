@@ -74,12 +74,12 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
 
             # Get the positive passage ids
             qid = data['qid']
-            pid = data["pos"]
+            pidx = data["pos"]
 
-            if len(pid) == 0:  # Skip entries without positives passages
+            if len(pidx) == 0:  # Skip entries without positives passages
                 continue
 
-            pos_min_ce_score = min([ce_scores[str(qid)][str(pid)] for str(pid) in data["pos"]])
+            pos_min_ce_score = min([ce_scores[str(qid)][str(pid)] for pid in pidx])
             ce_score_threshold = pos_min_ce_score - ce_score_margin
 
             # Get the hard negatives
