@@ -73,17 +73,17 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
             data = json.loads(line)
 
             # Get the positive passage ids
-            qid = data["qid"]
-            pos_pids = data["pos"]
+            qid = data['qid']
+            pid = data["pos"]
 
-            if len(pos_pids) == 0:  # Skip entries without positives passages
+            if len(pid) == 0:  # Skip entries without positives passages
                 continue
 
-            pos_min_ce_score = min([ce_scores[qid][pid] for pid in data["pos"]])
+            pos_min_ce_score = min([ce_scores[str(qid)][str(pid)] for str(pid) in data["pos"]])
             ce_score_threshold = pos_min_ce_score - ce_score_margin
 
             # Get the hard negatives
-            neg_pids = set()
+            neg_ids = set()
             if negs_to_use is None:
                 negs_to_use = list(data["neg"].keys())
 
@@ -93,20 +93,20 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
 
                 system_negs = data["neg"][system_name]
                 negs_added = 0
-                for pid in system_negs:
-                    if ce_scores[qid][pid] > ce_score_threshold:
+                for idx in system_negs:
+                    if ce_scores[str(qid)][str(idx)] > ce_score_threshold:
                         continue
 
-                    if pid not in neg_pids:
-                        neg_pids.add(pid)
+                    if str(idx) not in neg_ids:
+                        neg_ids.add(str(idx))
                         negs_added += 1
                         if negs_added >= num_negs_per_system:
                             break
         
-            neg_pids = list(neg_pids)
-            if len(neg_pids) < n_neg:
-                neg_pids = neg_pids + random.sample(all_docs, n_neg - len(neg_pids))
-            lookup[data['qid']] = neg_pids
+            neg_ids = list(neg_ids)
+            if len(neg_ids) < n_neg:
+                neg_ids = neg_ids + random.sample(all_docs, n_neg - len(neg_ids))
+            lookup[data['qid']] = neg_ids
     group_size = n_neg + 1
     out_file = os.path.join(data_folder, f"ensemble.{group_size}.jsonl")
     with open(out_file, "w") as f:
