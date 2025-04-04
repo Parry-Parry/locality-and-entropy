@@ -8,7 +8,7 @@ SAVE_LIMIT=1
 LOSS=$1
 GROUP_SIZE=$2
 TRIPLE_FILE="data/ensemble.16.jsonl"
-TEACHER_FILE="data/ensemble.scores.json.gz"
+TEACHER_FILE="data/ensemble.all.scores.json.gz"
 
 # Define constant
 TOTAL_DOCS=12000000
