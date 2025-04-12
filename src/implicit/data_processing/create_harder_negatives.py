@@ -49,7 +49,7 @@ def http_get(url: str, path: str) -> None:
     progress.close()
 
 
-def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0, data_folder="data", n_neg=15):
+def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=1.0, data_folder="data", n_neg=15):
     all_docs = pd.DataFrame(irds.load('msmarco-passage').docs_iter()).doc_id.to_list()
     ce_scores_file = os.path.join(data_folder, "ensemble.all.scores.json.gz")
     triples = pd.read_json(triples_file, lines=True, orient="records", chunksize=100000)

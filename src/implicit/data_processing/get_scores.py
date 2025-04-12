@@ -5,14 +5,12 @@ import pandas as pd
 import pyterrier as pt
 from tqdm import tqdm
 import json
-
 if not pt.started():
     pt.init()
 import logging
 import os
-import random
 from pyterrier_caching import ScorerCache
-from implicit.util import run2lookup, save_json, load_json
+from implicit.util import save_json, load_json
 
 
 def bm25(index_dir: str, k1: float = 1.2, b: float = 0.75, threads: int = 1, **kwargs):
@@ -57,22 +55,21 @@ def load_crossencoder(
 def mine(
     file,
     dataset: str,
-    out_dir: str,
+    teacher_file: str,
     model_name_or_path: str = None,
     batch_size: int = 512,
     cache: str = None,
     chunk_batches: int = 10000,
-    name_override : str = None
 ):
     chunk_size = chunk_batches * batch_size
     dataset = irds.load(dataset)
     queries = pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
     lookup = defaultdict(dict)
-    name = model_name_or_path.split('/')[-1] if name_override is None else name_override
-    if os.path.exists(out_dir + f"/{name}.scores.json.gz"):
-        lookup = load_json(out_dir + f"/{name}.scores.json.gz")
-        print(type(next(iter(lookup.items()))[0]))
+    if os.path.exists(teacher_file):
+        lookup = load_json(teacher_file)
+    else:
+        lookup = defaultdict(dict)
 
     def pivot_triples(triples):
         frame = {
@@ -123,16 +120,13 @@ def mine(
                 if len(frame) == 0:
                     buffer = []
                     continue
-                # filter if we already have scores for a qid-docno pair
                 res = crossencoder.transform(frame)
                 for row in tqdm(res.itertuples()):
                     lookup[row.qid][row.docno] = row.score
                 buffer = []
-    if name_override:
-        name = name_override
-    save_json(lookup, out_dir + f"/{name}.scores.json.gz")
+    save_json(lookup, teacher_file)
 
-    return f"Successfully saved to {out_dir}"
+    return f"Successfully saved to {teacher_file}"
 
 
 if __name__ == "__main__":
