@@ -67,7 +67,6 @@ def mine(
     dataset = irds.load(dataset)
     queries = pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
-    triples = pd.read_json('data/triples.jsonl', lines=True, orient="records", chunksize=100000)
 
     relevant_pairs = set()
     relevant_queries = set()
