@@ -156,7 +156,7 @@ def mine(
             # print("Reading line")
             buffer.append(json.loads(line))
             buffer_len = len(buffer)
-            remaining_lines -= buffer_len
+            remaining_lines -= 1
             remaining_lines = max(0, remaining_lines)
             # print(f"Buffer length: {buffer_len}")
             if buffer_len >= chunk_size or remaining_lines == 0:
