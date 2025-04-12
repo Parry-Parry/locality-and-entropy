@@ -72,7 +72,7 @@ def mine(
     relevant_pairs = set()
     relevant_queries = triples.query_id.unique().to_list()
     for line in triples.itertuples():
-        relevant_pairs.append((line.query_id, line.doc_id_a))
+        relevant_pairs.add((line.query_id, line.doc_id_a))
     del triples
     name = name_override
 
