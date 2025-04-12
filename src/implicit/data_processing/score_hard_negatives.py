@@ -1,4 +1,5 @@
 from collections import defaultdict
+import random
 from fire import Fire
 import ir_datasets as irds
 import pandas as pd
@@ -59,7 +60,7 @@ def mine(
     cache_every: int = 10,
     cache: str = None,
     chunk_batches: int = 10,
-    name_override : str = 'ensemble.all'
+    name_override : str = 'ensemble.sub'
 ):
     num_steps = N_DOCS // (runtime_batch_size * runtime_group_size)
     num_queries = num_steps * runtime_batch_size
@@ -68,21 +69,19 @@ def mine(
     queries = pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
 
-    relevant_queries = set()
-
-    with open('data/triples.jsonl') as f:
-        for line in tqdm(f):
-            line = json.loads(line)
-            qid = line['query_id']
-            relevant_queries.add(qid)
-
     name = name_override
 
     out_file = out_dir + f"/{name}.scores.json.gz"
     if os.path.exists(out_file):
         lookup = load_json(out_file)
+        num_missing = num_queries - len(lookup)
     else:
         lookup = defaultdict(dict)
+        num_missing = num_queries
+
+    if num_missing <= 0:
+        logging.info(f"Already computed {num_queries} scores")
+        return f"Already computed {num_queries} scores"
 
     def pivot_triples(triples):
         frame = {
@@ -95,8 +94,6 @@ def mine(
         for row in tqdm(triples, desc="Pivoting triples"):
             #print("Pivoting row")
             qid = str(row['qid'])
-            if qid not in relevant_queries:
-                continue
             if type(row['pos']) is list and len(row['pos']) > 0:
                 doc_id_a = [str(x) for x in row['pos']]
             elif type(row['pos']) is str:
@@ -147,12 +144,19 @@ def mine(
     N_CHUNKS = 0
     with gzip.open(file, "rt") as f:
         total_lines = sum(1 for _ in f)
-        remaining_lines = total_lines
+
+        relevant_lines = random.sample(
+            range(total_lines), num_missing
+        )
+
+        remaining_lines = len(relevant_lines)
         # random num queries to read
         f.seek(0)
         print(f"reading file with chunk size {chunk_size}, total lines {remaining_lines}")
         buffer = []
         for i, line in enumerate(f):
+            if i not in relevant_lines:
+                continue
             # print("Reading line")
             buffer.append(json.loads(line))
             buffer_len = len(buffer)
