@@ -156,11 +156,11 @@ def mine(
             # print("Reading line")
             buffer.append(json.loads(line))
             buffer_len = len(buffer)
+            remaining_lines -= buffer_len
+            remaining_lines = max(0, remaining_lines)
             # print(f"Buffer length: {buffer_len}")
-            if buffer_len >= chunk_size or remaining_lines < chunk_size:
+            if buffer_len >= chunk_size or remaining_lines == 0:
                 N_CHUNKS += 1
-                remaining_lines -= buffer_len
-                remaining_lines = max(0, remaining_lines)
                 frame = pivot_triples(buffer)
                 if len(frame) == 0:
                     buffer = []
