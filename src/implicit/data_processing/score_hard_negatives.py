@@ -73,6 +73,7 @@ def mine(
     
     with open('data/triples.jsonl') as f:
         for line in tqdm(f):
+            line = json.loads(line)
             qid = line['query_id']
             docid = line['doc_id_a']
             relevant_pairs.add((qid, docid))
