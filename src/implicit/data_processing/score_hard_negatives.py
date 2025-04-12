@@ -67,6 +67,13 @@ def mine(
     dataset = irds.load(dataset)
     queries = pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
+    triples = pd.read_json('data/triples.jsonl', lines=True, orient="records", chunksize=100000)
+
+    relevant_pairs = set()
+    relevant_queries = triples.query_id.unique().to_list()
+    for line in triples.itertuples():
+        relevant_pairs.append((line.query_id, line.doc_id_a))
+    del triples
     name = name_override
 
     out_file = out_dir + f"/{name}.scores.json.gz"
@@ -86,6 +93,8 @@ def mine(
         for row in tqdm(triples, desc="Pivoting triples"):
             #print("Pivoting row")
             qid = str(row['qid'])
+            if qid not in relevant_queries:
+                continue
             if type(row['pos']) is list and len(row['pos']) > 0:
                 doc_id_a = [str(x) for x in row['pos']]
             elif type(row['pos']) is str:
@@ -105,12 +114,16 @@ def mine(
                 lookup[qid] = {}
             if type(doc_id_a) is list:
                 for id in doc_id_a:
+                    if (qid, id) not in relevant_pairs:
+                        continue
                     if id not in lookup[qid]:
                         frame["qid"].append(qid)
                         frame["docno"].append(id)
                         frame["text"].append(docs[id])
                         frame["query"].append(query_text)
             else:
+                if (qid, doc_id_a) not in relevant_pairs:
+                    continue
                 if doc_id_a not in lookup[qid]:
                     frame["qid"].append(qid)
                     frame["docno"].append(doc_id_a)
@@ -136,19 +149,16 @@ def mine(
     N_CHUNKS = 0
     with gzip.open(file, "rt") as f:
         total_lines = sum(1 for _ in f)
+        remaining_lines = total_lines
         # random num queries to read
-        relevant_lines = set(np.random.choice(total_lines, num_queries, replace=False))
         f.seek(0)
-        remaining_lines = len(relevant_lines)
         print(f"reading file with chunk size {chunk_size}, total lines {remaining_lines}")
         buffer = []
         for i, line in enumerate(f):
-            if i not in relevant_lines:
-                continue
-            #print("Reading line")
+            # print("Reading line")
             buffer.append(json.loads(line))
             buffer_len = len(buffer)
-            #print(f"Buffer length: {buffer_len}")
+            # print(f"Buffer length: {buffer_len}")
             if buffer_len >= chunk_size or remaining_lines < chunk_size:
                 N_CHUNKS += 1
                 remaining_lines -= buffer_len
