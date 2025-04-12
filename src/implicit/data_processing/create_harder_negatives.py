@@ -114,12 +114,8 @@ def get_negatives(triples_file : str, num_negs_per_system=10, ce_score_margin=0.
     with open(out_file, "w") as f:
         for batch in triples:
             for row in batch.itertuples():
-                try:
-                    doc_id_b = lookup[str(row.query_id)]
-                    doc_id_b = random.sample(doc_id_b, n_neg)
-                except KeyError:
-                    print(f"Query ID {row.query_id} not found")
-                    continue
+                doc_id_b = lookup[str(row.query_id)]
+                doc_id_b = random.sample(doc_id_b, n_neg)
                 f.write(json.dumps({"query_id": row.query_id, "doc_id_a": row.doc_id_a, "doc_id_b": doc_id_b}) + "\n")
 
     return out_file
