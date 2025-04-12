@@ -69,7 +69,7 @@ def mine(
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
 
     relevant_queries = set()
-    
+
     with open('data/triples.jsonl') as f:
         for line in tqdm(f):
             line = json.loads(line)
