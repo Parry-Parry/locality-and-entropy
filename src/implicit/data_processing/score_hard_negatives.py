@@ -160,12 +160,12 @@ def mine(
             if buffer_len >= chunk_size or remaining_lines < chunk_size:
                 N_CHUNKS += 1
                 remaining_lines -= buffer_len
+                remaining_lines = max(0, remaining_lines)
                 frame = pivot_triples(buffer)
                 if len(frame) == 0:
                     buffer = []
                     continue
                 res = crossencoder.transform(frame)
-                #print(res.head())
                 for row in tqdm(res.itertuples()):
                     lookup[row.qid][row.docno] = row.score
                 buffer = []
