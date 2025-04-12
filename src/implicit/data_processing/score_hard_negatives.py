@@ -60,7 +60,7 @@ def mine(
     cache_every: int = 10,
     cache: str = None,
     chunk_batches: int = 10,
-    name_override : str = 'ensemble.sub'
+    name_override : str = 'ensemble.all'
 ):
     num_steps = N_DOCS // (runtime_batch_size * runtime_group_size)
     num_queries = num_steps * runtime_batch_size
