@@ -70,9 +70,11 @@ def mine(
     triples = pd.read_json('data/triples.jsonl', lines=True, orient="records", chunksize=100000)
 
     relevant_pairs = set()
-    relevant_queries = triples.query_id.unique().to_list()
-    for line in triples.itertuples():
-        relevant_pairs.add((line.query_id, line.doc_id_a))
+    relevant_queries = set()
+    for batch in triples:
+        for line in batch.itertuples():
+            relevant_pairs.add((line.query_id, line.doc_id_a))
+            relevant_queries.add(line.query_id)
     del triples
     name = name_override
 
