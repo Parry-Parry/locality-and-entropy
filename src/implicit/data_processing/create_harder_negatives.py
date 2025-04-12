@@ -108,14 +108,14 @@ def get_negatives(triples_file : str, num_negs_per_system=10, ce_score_margin=0.
             neg_ids = list(neg_ids)
             if len(neg_ids) < n_neg:
                 neg_ids = neg_ids + random.sample(all_docs, n_neg - len(neg_ids))
-            lookup[data['qid']] = neg_ids
+            lookup[qid] = neg_ids
     group_size = n_neg + 1
     out_file = os.path.join(data_folder, f"ensemble.{group_size}.jsonl")
     with open(out_file, "w") as f:
         for batch in triples:
             for row in batch.itertuples():
                 try:
-                    doc_id_b = lookup[int(row.query_id)]
+                    doc_id_b = lookup[str(row.query_id)]
                     doc_id_b = random.sample(doc_id_b, n_neg)
                 except KeyError:
                     print(f"Query ID {row.query_id} not found")
