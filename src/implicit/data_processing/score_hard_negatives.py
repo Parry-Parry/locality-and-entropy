@@ -71,11 +71,14 @@ def mine(
 
     relevant_pairs = set()
     relevant_queries = set()
-    for batch in triples:
-        for line in batch.itertuples():
-            relevant_pairs.add((line.query_id, line.doc_id_a))
-            relevant_queries.add(line.query_id)
-    del triples
+    
+    with open('data/triples.jsonl') as f:
+        for line in tqdm(f):
+            qid = line['query_id']
+            docid = line['doc_id_a']
+            relevant_pairs.add((qid, docid))
+            relevant_queries.add(qid)
+
     name = name_override
 
     out_file = out_dir + f"/{name}.scores.json.gz"
