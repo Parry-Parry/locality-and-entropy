@@ -68,15 +68,12 @@ def mine(
     queries = pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
     docs = pd.DataFrame(dataset.docs_iter()).set_index("doc_id").text.to_dict()
 
-    relevant_pairs = set()
     relevant_queries = set()
     
     with open('data/triples.jsonl') as f:
         for line in tqdm(f):
             line = json.loads(line)
             qid = line['query_id']
-            docid = line['doc_id_a']
-            relevant_pairs.add((qid, docid))
             relevant_queries.add(qid)
 
     name = name_override
@@ -119,16 +116,12 @@ def mine(
                 lookup[qid] = {}
             if type(doc_id_a) is list:
                 for id in doc_id_a:
-                    if (qid, id) not in relevant_pairs:
-                        continue
                     if id not in lookup[qid]:
                         frame["qid"].append(qid)
                         frame["docno"].append(id)
                         frame["text"].append(docs[id])
                         frame["query"].append(query_text)
             else:
-                if (qid, doc_id_a) not in relevant_pairs:
-                    continue
                 if doc_id_a not in lookup[qid]:
                     frame["qid"].append(qid)
                     frame["docno"].append(doc_id_a)
