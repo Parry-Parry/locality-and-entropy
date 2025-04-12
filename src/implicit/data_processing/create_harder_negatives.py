@@ -73,7 +73,7 @@ def get_negatives(triples_file : str, num_negs_per_system=10, ce_score_margin=0.
             data = json.loads(line)
 
             # Get the positive passage ids
-            qid = data['qid']
+            qid = str(data['qid'])
 
             if str(qid) not in ce_scores:
                 continue
