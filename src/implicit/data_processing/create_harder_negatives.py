@@ -74,6 +74,10 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
 
             # Get the positive passage ids
             qid = data['qid']
+
+            if str(qid) not in ce_scores:
+                print(f"Query ID {qid} not found in ce_scores")
+                continue
             pidx = data["pos"]
 
             if len(pidx) == 0:  # Skip entries without positives passages
