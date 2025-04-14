@@ -129,6 +129,7 @@ def get_negatives(triples_file : str, num_negs_per_system=10, ce_score_margin=0.
                 except KeyError:
                     print(f"Query ID {row.query_id} not found")
                     lost += 1
+                    continue
                 f.write(json.dumps({"query_id": row.query_id, "doc_id_a": row.doc_id_a, "doc_id_b": doc_id_b}) + "\n")
     percentage_loss = lost / total
     print(total)
