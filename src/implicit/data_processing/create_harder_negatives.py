@@ -131,6 +131,8 @@ def get_negatives(triples_file : str, num_negs_per_system=10, ce_score_margin=0.
                     lost += 1
                 f.write(json.dumps({"query_id": row.query_id, "doc_id_a": row.doc_id_a, "doc_id_b": doc_id_b}) + "\n")
     percentage_loss = lost / total
+    print(total)
+    print(lost)
     return percentage_loss
 
 
