@@ -106,9 +106,14 @@ def mine(
     # read json lines by line in chunks using a buffer
     with open(file, "r") as f:
         buffer = []
+        total_lines = sum(1 for _ in f)
+        f.seek(0)
+        remaining_lines = total_lines
         for line in f:
+            remaining_lines -= 1
             buffer.append(json.loads(line))
-            if len(buffer) == chunk_size:
+            remaining_lines = max(0, remaining_lines)
+            if len(buffer) == chunk_size or remaining_lines == 0:
                 frame = pivot_triples(buffer)
                 if len(frame) == 0:
                     buffer = []
