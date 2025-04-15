@@ -10,6 +10,7 @@ from fire import Fire
 import pandas as pd
 import ir_datasets as irds
 import random
+from rankers._util import load_json
 
 def http_get(url: str, path: str) -> None:
     """
@@ -48,13 +49,19 @@ def http_get(url: str, path: str) -> None:
     progress.close()
 
 
-def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0, data_folder="data", n_neg=15):
+def get_negatives(triples_file : str, num_negs_per_system=10, ce_score_margin=0.5, data_folder="data", n_neg=15, subset=True):
     all_docs = pd.DataFrame(irds.load('msmarco-passage').docs_iter()).doc_id.to_list()
     ce_scores_file = os.path.join(data_folder, "ensemble.all.scores.json.gz")
     triples = pd.read_json(triples_file, lines=True, orient="records", chunksize=100000)
     logging.info("Load CrossEncoder scores dict")
-    with gzip.open(ce_scores_file, "rb") as fIn:
-        ce_scores = pickle.load(fIn)
+    ce_scores = load_json(ce_scores_file)
+
+    expected_num_queries = (12e6 // (8 * 16)) * 8
+    ce_queries = ce_scores.keys()
+    if subset:
+        total_queries = len(ce_queries)
+        if total_queries > expected_num_queries:
+            ce_queries = random.sample(ce_queries, int(expected_num_queries))
 
     # As training data we use hard-negatives that have been mined using various systems
     train_file_path = os.path.join(data_folder, "msmarco-hard-negatives.jsonl.gz")
@@ -73,17 +80,17 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
             data = json.loads(line)
 
             # Get the positive passage ids
-            qid = data["qid"]
-            pos_pids = data["pos"]
+            qid = str(data['qid'])
 
-            if len(pos_pids) == 0:  # Skip entries without positives passages
+            if str(qid) not in ce_queries:
+                continue
+            pidx = data["pos"]
+
+            if len(pidx) == 0:  # Skip entries without positives passages
                 continue
 
-            pos_min_ce_score = min([ce_scores[qid][pid] for pid in data["pos"]])
-            ce_score_threshold = pos_min_ce_score - ce_score_margin
-
             # Get the hard negatives
-            neg_pids = set()
+            neg_ids = set()
             if negs_to_use is None:
                 negs_to_use = list(data["neg"].keys())
 
@@ -93,31 +100,35 @@ def get_negatives(triples_file : str, num_negs_per_system=5, ce_score_margin=3.0
 
                 system_negs = data["neg"][system_name]
                 negs_added = 0
-                for pid in system_negs:
-                    if pid not in neg_pids:
-                        neg_pids.add(pid)
+                for idx in system_negs:
+                    if str(idx) not in neg_ids:
+                        neg_ids.add(str(idx))
                         negs_added += 1
                         if negs_added >= num_negs_per_system:
                             break
-        
-            neg_pids = list(neg_pids)
-            if len(neg_pids) < n_neg:
-                neg_pids = neg_pids + random.sample(all_docs, n_neg - len(neg_pids))
-            lookup[data['qid']] = neg_pids
+ 
+            neg_ids = list(neg_ids)
+            if len(neg_ids) < n_neg:
+                neg_ids = neg_ids + random.sample(all_docs, n_neg - len(neg_ids))
+            lookup[qid] = neg_ids
     group_size = n_neg + 1
     out_file = os.path.join(data_folder, f"ensemble.unfiltered.{group_size}.jsonl")
+    total, lost = 0, 0
     with open(out_file, "w") as f:
         for batch in triples:
             for row in batch.itertuples():
+                total += 1
                 try:
-                    doc_id_b = lookup[int(row.query_id)]
+                    doc_id_b = lookup[str(row.query_id)]
                     doc_id_b = random.sample(doc_id_b, n_neg)
                 except KeyError:
-                    print(f"Query ID {row.query_id} not found")
+                    lost += 1
                     continue
                 f.write(json.dumps({"query_id": row.query_id, "doc_id_a": row.doc_id_a, "doc_id_b": doc_id_b}) + "\n")
-
-    return out_file
+    percentage_loss = lost / total
+    print(total)
+    print(lost)
+    return percentage_loss
 
 
 if __name__ == "__main__":
