@@ -21,3 +21,10 @@ python -m implicit.run_entropy \
     --dataset $DATASET \
     --out_dir $OUTPUT_DIR \
     --name_override ensemble.all
+
+python -m implicit.run_entropy \
+    --file $OUTPUT_DIR/ensemble.unfiltered.16.jsonl \
+    --model_name_or_path $CHECKPOINT \
+    --dataset $DATASET \
+    --out_dir $OUTPUT_DIR \
+    --name_override ensemble.all
