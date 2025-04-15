@@ -23,6 +23,7 @@ def entropy(prob_dist):
 
 def mine(
     file,
+    teacher_file: str,
     dataset: str,
     out_dir: str,
     model_name_or_path: str = None,
@@ -35,16 +36,14 @@ def mine(
     dataset = irds.load(dataset)
     lookup = defaultdict(dict)
     name = model_name_or_path.split('/')[-1] if name_override is None else name_override
-    if name_override:
-        name = name_override
     out_file = out_dir + f"/{name}.{group_size}.entropy.json.gz"
     if os.path.exists(out_file):
         logging.info(f"File already exists at {out_file}")
         return f"File already exists at {out_file}"
-    if os.path.exists(out_dir + f"/{name}.scores.json.gz"):
-        lookup = load_json(out_dir + f"/{name}.scores.json.gz")
+    if os.path.exists(teacher_file):
+        lookup = load_json(teacher_file)
     else:
-        raise FileNotFoundError(f"File not found at {out_dir + f'/{name}.scores.json.gz'}")
+        raise FileNotFoundError(teacher_file)
 
     def pivot_triples(triples):
         frame = {

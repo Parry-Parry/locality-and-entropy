@@ -9,6 +9,7 @@ MODELS=("bm25" "crossencoder" "random")
 for MODEL in ${MODELS[@]}; do
     python -m implicit.run_entropy \
         --file $OUTPUT_DIR/$MODEL.16.jsonl \
+        --teacher_file $OUTPUT_DIR/$MODEL.scores.json.gz \
         --model_name_or_path $CHECKPOINT \
         --dataset $DATASET \
         --out_dir $OUTPUT_DIR \
@@ -17,14 +18,16 @@ done
 
 python -m implicit.run_entropy \
     --file $OUTPUT_DIR/ensemble.16.jsonl \
+    --teacher_file $OUTPUT_DIR/ensemble.all.scores.json.gz \
     --model_name_or_path $CHECKPOINT \
     --dataset $DATASET \
     --out_dir $OUTPUT_DIR \
-    --name_override ensemble.all
+    --name_override ensemble
 
 python -m implicit.run_entropy \
     --file $OUTPUT_DIR/ensemble.unfiltered.16.jsonl \
+    --teacher_file $OUTPUT_DIR/ensemble.all.scores.json.gz \
     --model_name_or_path $CHECKPOINT \
     --dataset $DATASET \
     --out_dir $OUTPUT_DIR \
-    --name_override ensemble.all
+    --name_override ensemble.unfiltered
