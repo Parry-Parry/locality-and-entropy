@@ -1,8 +1,6 @@
-TRIPLES=''
-OUTPUT_DIRECTORY=''
-TEACHER_FILE=''
-GROUP_SIZE=16
-USE_POSITIVE=True
+TRIPLES='data/bm25.16.jsonl'
+OUTPUT_DIRECTORY='data'
+TEACHER_FILE='data/bm25.crossencoder.scores.json.gz'
 
 MODES=(
     "upper_quartile",
