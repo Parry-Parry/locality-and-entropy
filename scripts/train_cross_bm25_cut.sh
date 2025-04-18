@@ -9,7 +9,7 @@ LOSS=$1
 GROUP_SIZE=$2
 MODE=$3
 TEACHER_FILE="data/bm25.crossencoder.scores.json.gz"
-TRIPLES_FILE="data/$MODE.jsonl"
+TRIPLE_FILE="data/$MODE.jsonl"
 
 # Define constant
 TOTAL_DOCS=12000000
