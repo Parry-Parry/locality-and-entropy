@@ -3,11 +3,11 @@ OUTPUT_DIRECTORY='data'
 TEACHER_FILE='data/bm25.crossencoder.scores.json.gz'
 
 MODES=(
-    "upper_quartile",
-    "lower_quartile",
-    "above_median",
-    "below_median",
-    "outlier_quartiles",
+    "upper_quartile"
+    "lower_quartile"
+    "above_median"
+    "below_median"
+    "outlier_quartiles"
     "inner_quartiles"
 )
 
