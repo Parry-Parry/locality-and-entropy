@@ -47,7 +47,7 @@ def main(
     output_file = os.path.join(output_directory, output_file)
     entropy_lookup = {}
     if use_positive:
-        with open(triples) as f, open():
+        with open(triples) as f:
             for line in tqdm(f):
                 line = json.loads(line)
                 qid = str(line['query_id'])
@@ -65,7 +65,7 @@ def main(
                 entropy = compute_entropy_for_subranking(ranking, teacher_scores, qid)
                 entropy_lookup[qid] = entropy
     else:
-        with open(triples) as f, open():
+        with open(triples) as f:
             for line in tqdm(f):
                 line = json.loads(line)
                 qid = str(line['query_id'])
