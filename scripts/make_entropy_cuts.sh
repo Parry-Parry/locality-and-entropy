@@ -17,7 +17,7 @@ for mode in "${MODES[@]}"; do
     # Call the Python script with the appropriate arguments
 
     python -m implicit.entropy.generate_entropy \
-        teacher_file ${TEACHER_FILE} \
+        --teacher_file ${TEACHER_FILE} \
         --triples ${TRIPLES} \
         --output_directory ${OUTPUT_DIRECTORY} \
         --mode ${mode} \
