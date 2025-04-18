@@ -1,6 +1,6 @@
 TRIPLES='data/bm25.16.jsonl'
 OUTPUT_DIRECTORY='data'
-TEACHER_FILE='data/bm25.crossencoder.scores.json.gz'
+TEACHER_FILE='data/bm25.scores.json.gz'
 
 MODES=(
     "upper_quartile"
