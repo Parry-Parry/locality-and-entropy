@@ -1,5 +1,5 @@
 import math
-from rankers._util import load_json
+from rankers._util import load_json, save_json
 import os
 import ir_datasets as irds
 from . import cuts as cuts
@@ -44,7 +44,9 @@ def main(
     teacher_scores = load_json(teacher_file)
     positive = '.positive' if use_positive else ''
     output_file = f'{cut_function}{positive}.txt'
+    entropy_lookup_file = f'{cut_function}{positive}.json.gz'
     output_file = os.path.join(output_directory, output_file)
+    entropy_lookup_file = os.path.join(output_directory, entropy_lookup_file)
     entropy_lookup = {}
     if use_positive:
         with open(triples) as f:
@@ -80,6 +82,7 @@ def main(
                 entropy = compute_entropy_for_subranking(ranking, teacher_scores, qid)
                 entropy_lookup[qid] = entropy
 
+    save_json(entropy_lookup, entropy_lookup_file)
     cut_ids = cut_function(entropy_lookup)
 
     with open(output_file, 'w') as f:
