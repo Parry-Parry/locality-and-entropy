@@ -13,7 +13,7 @@ def upper_quartile(entropy_values):
     values = np.array(list(entropy_values.values()))
     # Using 'linear' interpolation. Adjust for your version of NumPy if needed.
     q3 = np.percentile(values, 75, method='linear')
-    return [qid for qid, value in entropy_values.items() if value > q3]
+    return [qid for qid, value in entropy_values.items() if value < q3]
 
 
 def lower_quartile(entropy_values):
@@ -28,7 +28,7 @@ def lower_quartile(entropy_values):
     """
     values = np.array(list(entropy_values.values()))
     q1 = np.percentile(values, 25, method='linear')
-    return [qid for qid, value in entropy_values.items() if value < q1]
+    return [qid for qid, value in entropy_values.items() if value > q1]
 
 
 def above_median(entropy_values):
