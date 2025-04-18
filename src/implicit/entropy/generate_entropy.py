@@ -47,42 +47,46 @@ def main(
     entropy_lookup_file = f'{cut_function}{positive}.json.gz'
     output_file = os.path.join(output_directory, output_file)
     entropy_lookup_file = os.path.join(output_directory, entropy_lookup_file)
-    entropy_lookup = {}
-    if use_positive:
-        with open(triples) as f:
-            for line in tqdm(f):
-                line = json.loads(line)
-                qid = str(line['query_id'])
-                doc_id_a = str(line['doc_id_a'])
-                doc_id_b = [str(x) for x in line['doc_id_b']]
-
-                if qid not in teacher_scores:
-                    continue
-                if doc_id_a not in teacher_scores[qid]:
-                    continue
-                if any(doc_id not in teacher_scores[qid] for doc_id in doc_id_b):
-                    continue
-                
-                ranking = [doc_id_a] + doc_id_b
-                entropy = compute_entropy_for_subranking(ranking, teacher_scores, qid)
-                entropy_lookup[qid] = entropy
+    
+    if os.path.exists(entropy_lookup_file):
+        entropy_lookup = load_json(entropy_lookup)
     else:
-        with open(triples) as f:
-            for line in tqdm(f):
-                line = json.loads(line)
-                qid = str(line['query_id'])
-                doc_id_b = [str(x) for x in line['doc_id_b']]
+        entropy_lookup = {}
+        if use_positive:
+            with open(triples) as f:
+                for line in tqdm(f):
+                    line = json.loads(line)
+                    qid = str(line['query_id'])
+                    doc_id_a = str(line['doc_id_a'])
+                    doc_id_b = [str(x) for x in line['doc_id_b']]
 
-                if qid not in teacher_scores:
-                    continue
-                if any(doc_id not in teacher_scores[qid] for doc_id in doc_id_b):
-                    continue
+                    if qid not in teacher_scores:
+                        continue
+                    if doc_id_a not in teacher_scores[qid]:
+                        continue
+                    if any(doc_id not in teacher_scores[qid] for doc_id in doc_id_b):
+                        continue
+                    
+                    ranking = [doc_id_a] + doc_id_b
+                    entropy = compute_entropy_for_subranking(ranking, teacher_scores, qid)
+                    entropy_lookup[qid] = entropy
+        else:
+            with open(triples) as f:
+                for line in tqdm(f):
+                    line = json.loads(line)
+                    qid = str(line['query_id'])
+                    doc_id_b = [str(x) for x in line['doc_id_b']]
 
-                ranking = [doc_id_a] + doc_id_b
-                entropy = compute_entropy_for_subranking(ranking, teacher_scores, qid)
-                entropy_lookup[qid] = entropy
+                    if qid not in teacher_scores:
+                        continue
+                    if any(doc_id not in teacher_scores[qid] for doc_id in doc_id_b):
+                        continue
 
-    save_json(entropy_lookup, entropy_lookup_file)
+                    ranking = [doc_id_a] + doc_id_b
+                    entropy = compute_entropy_for_subranking(ranking, teacher_scores, qid)
+                    entropy_lookup[qid] = entropy
+
+        save_json(entropy_lookup, entropy_lookup_file)
     cut_ids = cut_function(entropy_lookup)
 
     with open(output_file, 'w') as f:
