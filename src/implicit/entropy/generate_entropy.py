@@ -43,8 +43,8 @@ def main(
     ir_dataset = irds.load(ir_dataset)
     teacher_scores = load_json(teacher_file)
     positive = '.positive' if use_positive else ''
-    output_file = f'{cut_function}{positive}.txt'
-    entropy_lookup_file = f'{cut_function}{positive}.json.gz'
+    output_file = f'{mode}{positive}.txt'
+    entropy_lookup_file = f'{mode}{positive}.json.gz'
     output_file = os.path.join(output_directory, output_file)
     entropy_lookup_file = os.path.join(output_directory, entropy_lookup_file)
     
