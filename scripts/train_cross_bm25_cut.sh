@@ -1,5 +1,5 @@
 MODEL_NAME="google/electra-base-discriminator"
-OUTPUT_DIR="checkpoints"
+OUTPUT_DIR="entropy_checkpoints"
 WANDB_PROJECT="negatives"
 WARMUP_RATIO=0.1
 LR=1e-5
