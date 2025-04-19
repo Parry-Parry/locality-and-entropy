@@ -2,7 +2,7 @@ OUTPUT_DIR='data'
 CHECKPOINT='checkpoints/crossencoder'
 DATASET="msmarco-passage/train/triples-small"
 
-MODES=(
+MODELS=(
     "upper_quartile"
     "lower_quartile"
     "above_median"
