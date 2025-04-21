@@ -13,7 +13,7 @@ TRIPLE_FILE="data/$MODE.jsonl"
 
 # Define constant
 TOTAL_DOCS=12000000
-BASE_BATCH_SIZE=8
+BASE_BATCH_SIZE=4
 
 # how many steps to get, TOTAL_DOCS / (BATCH_SIZE * GROUP_SIZE)
 PER_BATCH_DOCS=$((BASE_BATCH_SIZE * GROUP_SIZE))
@@ -33,7 +33,7 @@ CMD="python -m implicit.train_cat \
 --training_dataset_file $TRIPLE_FILE \
 --group_size $GROUP_SIZE \
 --per_device_train_batch_size $BASE_BATCH_SIZE \
---gradient_accumulation_steps 2 \
+--gradient_accumulation_steps 4 \
 --ir_dataset "msmarco-passage/train/triples-small" \
 --logging_steps 1000 \
 --save_steps 100000 \
