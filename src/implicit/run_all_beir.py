@@ -80,6 +80,7 @@ def run_topics(
         out_path = os.path.join(output_directory, basename)
 
     for file in glob.glob("data/beir*.txt"):
+        print(f"Processing {file}")
         # format is data/beir.run.{system_name}.{dataset_id}.txt
         system_name = file.split(".")[2]
         dataset_id = file.split(".")[3]
