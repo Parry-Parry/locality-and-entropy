@@ -92,7 +92,7 @@ def run_topics(
             dataset_id = '/'.join(dataset_id.split('-'))
 
         try:
-            dataset = irds.load(dataset_id)
+            dataset = irds.load(f"beir/{dataset_id}")
         except Exception as e:
             print(f"Error loading dataset {dataset_id}: {e}")
             continue
