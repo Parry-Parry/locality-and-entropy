@@ -101,9 +101,13 @@ def run_topics(
             return f"File already exists at {out_file}"
 
         run = pt.io.read_results(file)
-        queries = (
-            pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
-        )
+        try:
+            queries = (
+                pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
+            )
+        except Exception as e:
+            print(f"Error loading queries for dataset {dataset_id}: {e}")
+            continue
         run["query"] = run["qid"].map(lambda qid: queries[qid])
         docstore = dataset.doc_store()
         run['text'] = run['docno'].map(lambda docno: docstore.get(docno).text)
