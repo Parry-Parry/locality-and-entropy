@@ -85,7 +85,7 @@ def run_topics(
         dataset_id = file.split(".")[3]
         formatted_dataset = dataset_id.replace("/", "-")
         model_name = os.path.basename(model_name_or_path)
-        out_file = os.path.join(out_path, f"{formatted_dataset}_{model_name}_{system_name}.res.gz")
+        out_file = os.path.join(out_path, f"beir_{formatted_dataset}_{model_name}_{system_name}.res.gz")
 
         if 'cqadupstack' in dataset_id:
             dataset_id = '/'.join(dataset_id.split('-'))
