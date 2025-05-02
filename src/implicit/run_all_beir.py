@@ -109,7 +109,7 @@ def run_topics(
             print(f"Error loading queries for dataset {dataset_id}: {e}")
             continue
         run["query"] = run["qid"].map(lambda qid: queries[qid])
-        docstore = dataset.doc_store()
+        docstore = dataset.docs_store()
         run['text'] = run['docno'].map(lambda docno: docstore.get(docno).text)
 
         try:
