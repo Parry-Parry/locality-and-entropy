@@ -78,12 +78,7 @@ def run_topics(
         checkpoint_number = model_name_or_path.split("-")[-1]
         basename = f"tmp-{checkpoint_number}-{basename}"
         out_path = os.path.join(output_directory, basename)
-
-    files = glob.glob("data/run.beir*.txt")
-    print(f"Found {len(files)} files to process")
-    for file in files:
-        print(f"Processing {file}")
-
+    
     for file in glob.glob("data/run.beir*.txt"):
         print(f"Processing {file}")
         # format is data/beir.run.{system_name}.{dataset_id}.txt
@@ -92,7 +87,7 @@ def run_topics(
         formatted_dataset = dataset_id.replace("/", "-")
         model_name = os.path.basename(model_name_or_path)
         out_file = os.path.join(out_path, f"beir_{formatted_dataset}_{model_name}_{system_name}.res.gz")
-
+        print(f"Output file: {out_file}")
         if 'cqadupstack' in dataset_id:
             dataset_id = '/'.join(dataset_id.split('-'))
 
