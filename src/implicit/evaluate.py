@@ -53,7 +53,7 @@ def main(
         runs,
         pt_dataset.get_topics("text"),
         pt_dataset.get_qrels(),
-        per_query=per_query,
+        perquery=per_query,
         eval_metrics=metrics,
         names=names,
         baseline=0 if baseline is not None else None,
