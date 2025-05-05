@@ -14,6 +14,7 @@ def main(
     out_dir: str,
     rel: int = 1,
     filter: bool = False,
+    per_query: bool = False,
     baseline: str = None,
 ):
     files = [f for f in os.listdir(run_dir) if os.path.isfile(join(run_dir, f))]
@@ -52,6 +53,7 @@ def main(
         runs,
         pt_dataset.get_topics("text"),
         pt_dataset.get_qrels(),
+        per_query=per_query,
         eval_metrics=metrics,
         names=names,
         baseline=0 if baseline is not None else None,
