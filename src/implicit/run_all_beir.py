@@ -78,8 +78,10 @@ def run_topics(
         checkpoint_number = model_name_or_path.split("-")[-1]
         basename = f"tmp-{checkpoint_number}-{basename}"
         out_path = os.path.join(output_directory, basename)
+
+    files = glob.glob("data/run.beir*.txt")
     
-    for file in glob.glob("data/run.beir*.txt"):
+    for file in files:
         print(f"Processing {file}")
         # format is data/beir.run.{system_name}.{dataset_id}.txt
         system_name = file.split(".")[2]
