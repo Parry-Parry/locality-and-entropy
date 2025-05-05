@@ -10,7 +10,6 @@ CMD="python -m implicit.batch_run_beir \
 --ir_dataset $dataset \
 --model_directory $MODEL_DIRECTORY \
 --output_directory $OUTPUT_DIRECTORY"
-fi
 
 # Execute the command
 eval $CMD
