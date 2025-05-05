@@ -100,6 +100,7 @@ def run_topics(
             dataset = irds.load(f"beir/{dataset_id}")
         except Exception as e:
             print(f"Error loading dataset {dataset_id}: {e}")
+            raise e
             continue
 
         if os.path.exists(out_file) and not dont_overwrite:
@@ -112,6 +113,7 @@ def run_topics(
             )
         except Exception as e:
             print(f"Error loading queries for dataset {dataset_id}: {e}")
+            raise e
             continue
         run["query"] = run["qid"].map(lambda qid: queries[qid])
         docstore = dataset.docs_store()
@@ -124,6 +126,7 @@ def run_topics(
                 else load_cross_encoder(model_name_or_path, batch_size=batch_size)
             )
         except Exception as e:
+            raise e
             return f"Error loading model: {e}"
 
         res = model.transform(run)
