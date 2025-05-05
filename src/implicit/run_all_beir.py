@@ -105,7 +105,7 @@ def run_topics(
             continue
 
         run = pt.io.read_results(file)
-        run = run.groupby("qid").sort_values("score", ascending=False).head(depth)
+        run = run.sort_values(["qid", "score"], ascending=[True, False]).groupby("qid").head(depth)
         try:
             queries = (
                 pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
