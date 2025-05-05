@@ -66,6 +66,7 @@ def run_topics(
     batch_size: int = 256,
     cat: bool = False,
     dont_overwrite: bool = False,
+    depth: int = 100,
 ):
     if not os.path.exists(f"{model_name_or_path}/config.json"):
         # find most recent checkpoint
@@ -104,6 +105,7 @@ def run_topics(
             continue
 
         run = pt.io.read_results(file)
+        run = run.groupby("qid").sort_values("score", ascending=False).head(depth)
         try:
             queries = (
                 pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
