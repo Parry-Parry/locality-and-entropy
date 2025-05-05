@@ -96,12 +96,12 @@ def run_topics(
         try:
             dataset = irds.load(f"beir/{dataset_id}")
         except Exception as e:
-            print(f"Error loading dataset {dataset_id}: {e}")
-            raise e
+            logging.info(f"Error loading dataset {dataset_id}: {e}")
             continue
 
         if os.path.exists(out_file) and not dont_overwrite:
-            return f"File already exists at {out_file}"
+            logging.info(f"File already exists at {out_file}")
+            continue
 
         run = pt.io.read_results(file)
         try:
@@ -109,8 +109,7 @@ def run_topics(
                 pd.DataFrame(dataset.queries_iter()).set_index("query_id").text.to_dict()
             )
         except Exception as e:
-            print(f"Error loading queries for dataset {dataset_id}: {e}")
-            raise e
+            logging.info(f"Error loading queries for dataset {dataset_id}: {e}")
             continue
         run["query"] = run["qid"].map(lambda qid: queries[qid])
         docstore = dataset.docs_store()
@@ -123,7 +122,7 @@ def run_topics(
                 else load_cross_encoder(model_name_or_path, batch_size=batch_size)
             )
         except Exception as e:
-            raise e
+            logging.info(f"Error loading model {model_name_or_path}: {e}")
             return f"Error loading model: {e}"
 
         res = model.transform(run)
