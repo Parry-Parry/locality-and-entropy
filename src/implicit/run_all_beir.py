@@ -131,7 +131,7 @@ def run_topics(
         pt.io.write_results(res, out_file)
 
         logging.info(f"Results written to {out_file}")
-        return f"Results written to {out_file}"
+    return f"Results written to {output_directory}"
 
 
 if __name__ == "__main__":
