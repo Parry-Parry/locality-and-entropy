@@ -21,7 +21,7 @@ def load_bi_encoder(
     model = AutoModel.from_pretrained(checkpoint).cuda().eval()
     tokenizer = AutoTokenizer.from_pretrained(checkpoint)
     backbone = HgfBiEncoder(model, tokenizer, {}, device=model.device)
-    return BiScorer(backbone, batch_size=batch_size)
+    return BiScorer(backbone, batch_size=batch_size, verbose=True)
 
 
 def load_cross_encoder(
@@ -31,7 +31,7 @@ def load_cross_encoder(
 ):
     from rankers import CatTransformer
 
-    return CatTransformer.from_pretrained(checkpoint, batch_size=batch_size)
+    return CatTransformer.from_pretrained(checkpoint, batch_size=batch_size, verbose=True)
 
 
 def load_run(system_name, dataset_id):
