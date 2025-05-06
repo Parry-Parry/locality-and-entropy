@@ -1,22 +1,22 @@
 # teacher_student_distribution_analysis.py
 """
-Robust utilities for analysing **teacher-student retrieval relationships** and
-complementary dataset-level statistics.
+Robust utilities for analysing **teacher–student retrieval relationships** and
+complementary dataset‑level statistics.
 
 Analyses provided
 -----------------
-1. **Entropy-performance correlation** (`corr --type entropy`)
-2. **KL-divergence-performance correlation** (`corr --type kl`)
+1. **Entropy–performance correlation** (`corr --type entropy`)
+2. **KL‑divergence–performance correlation** (`corr --type kl`)
 3. **Mean supremum distance per training dataset** (`supremum`)
 4. **Mean query entropy per run file** (`entropy`)
 
 Features
 --------
 * **Dataset filtering**: optional substring filter so only run files whose
-  names contain that substring (case-insensitive) are processed.
+  names contain that substring (case‑insensitive) are processed.
 * Lightweight dependencies: **pandas**, **numpy**, **scipy**, **json**, **gzip**.
 * Streams JSONL training data; avoids loading large artefacts into memory.
-* Single-file module with CLI (`python teacher_student_distribution_analysis.py --help`).
+* Single‑file module with CLI (`python teacher_student_distribution_analysis.py --help`).
 """
 from __future__ import annotations
 
@@ -49,23 +49,32 @@ def _safe_probability_distribution(scores: np.ndarray) -> np.ndarray:
     return scores / scores.sum()
 
 ###############################################################################
-# Run-file parsing
+# Run‑file parsing
 ###############################################################################
 
 def read_trec_run_scores(path: str | Path) -> Dict[str, Dict[str, float]]:
-    """Return {qid: {docid: score}} from a TREC run file."""
+    """Parse a TREC run file (plain text **or** *.gz*).
+
+    Returns
+    -------
+    dict
+        Mapping `qid → {docid: score}`.
+    """
     run: Dict[str, Dict[str, float]] = {}
-    with open(path, "r", encoding="utf-8") as f:
+    # Auto‑detect compression by file extension
+    open_fn = gzip.open if str(path).endswith(".gz") else open
+    mode = "rt" if open_fn is gzip.open else "r"
+    with open_fn(path, mode, encoding="utf-8") as f:
         for line in f:
             parts = line.rstrip().split()
             if len(parts) < 6:
-                continue
+                continue  # skip malformed lines
             qid, docid, score = parts[0], parts[2], float(parts[4])
             run.setdefault(qid, {})[docid] = score
     return run
 
 ###############################################################################
-# Information-theoretic measures
+# Information‑theoretic measures
 ###############################################################################
 
 def shannon_entropy(scores: List[float]) -> float:
@@ -90,13 +99,35 @@ def kl_divergence_teacher_student(
     return float(np.sum(P * np.log2(P / Q)))
 
 ###############################################################################
-# 1. Entropy-performance correlation
+# 1. Entropy–performance correlation
 ###############################################################################
 
 def compute_entropy_dataframe(run_path: str | Path) -> pd.DataFrame:
     q2scores = read_trec_run_scores(run_path)
     rows = [(qid, shannon_entropy(list(scores.values()))) for qid, scores in q2scores.items()]
     return pd.DataFrame(rows, columns=["qid", "entropy"])
+
+
+def _ensure_long_format(results_df: pd.DataFrame) -> pd.DataFrame:
+    """Convert a *wide* metrics table (one row per run, metric columns) to *long*.
+
+    If `results_df` already has columns [`name`, `qid`, `measure`, `value`] it is
+    returned unchanged. Otherwise we expect a format like:
+        name, AP(rel=2), nDCG@10, ...
+    with **one row per run** (aggregated metrics). We reshape it to long so that
+    downstream code expecting [`name`, `measure`, `value`] continues to work.
+    Note: *query‑level* analyses still require a `qid` column.
+    """
+    if {"measure", "value"}.issubset(results_df.columns):
+        return results_df  # already long
+
+    if "name" not in results_df.columns:
+        raise ValueError("results_df must contain a 'name' column.")
+
+    metric_cols = [c for c in results_df.columns if c != "name"]
+    long_df = results_df.melt(id_vars="name", value_vars=metric_cols,
+                              var_name="measure", value_name="value")
+    return long_df
 
 
 def correlate_student_with_entropy(
@@ -106,7 +137,24 @@ def correlate_student_with_entropy(
     teacher_run_path: str | Path,
     output_tsv: str | Path | None = None,
 ) -> pd.DataFrame:
-    df_metric = results_df[results_df["measure"] == measure].copy()
+    """Correlate teacher entropy with *query‑level* student effectiveness.
+
+    Requirements
+    ------------
+    * `results_df` **must** contain per‑query metrics – i.e. columns [`qid`,
+      `name`, `measure`, `value`]. If your CSV is *aggregated per run* (one row
+      per model), you need to provide a per‑query metrics file instead.
+    """
+    # Detect wide vs long format
+    if "qid" not in results_df.columns:
+        raise ValueError("`correlate_student_with_entropy` requires a per‑query "
+                         "metrics table with a 'qid' column. Your results.csv "
+                         "appears aggregated per run. Provide per‑query metrics "
+                         "or use other analyses that work on run‑level data.")
+
+    results_df = _ensure_long_format(results_df)
+
+    df_metric = results_df[(results_df["measure"] == measure)].copy()
     ent_df = compute_entropy_dataframe(teacher_run_path).set_index("qid")
 
     teacher_scores = (
@@ -126,14 +174,15 @@ def correlate_student_with_entropy(
         r_s, p_s = stats.spearmanr(merged["entropy"], merged["student_value"])
         rows.append((student_name, r_p, p_p, r_s, p_s))
 
-    out_df = pd.DataFrame(rows, columns=["student_name", "r_pearson", "p_pearson", "r_spearman", "p_spearman"])\
+    out_df = pd.DataFrame(rows,
+                          columns=["student_name", "r_pearson", "p_pearson", "r_spearman", "p_spearman"])\
               .sort_values("r_pearson", ascending=False, ignore_index=True)
     if output_tsv is not None:
-        out_df.to_csv(output_tsv, sep="\t", index=False)
+        out_df.to_csv(output_tsv, sep="	", index=False)
     return out_df
 
 ###############################################################################
-# 2. KL-divergence-performance correlation
+# 2. KL‑divergence–performance correlation
 ###############################################################################
 
 def _locate_student_run(model_name: str, run_dir: Path, dataset_filter: str | None) -> Path | None:
@@ -234,8 +283,8 @@ def batch_mean_supremum(
     Parameters
     ----------
     training_paths : iterable of paths to JSONL files
-    score_paths    : iterable of paths to gz-JSON matrices (same length)
-    output_tsv     : optional file path - write the result as TSV if given
+    score_paths    : iterable of paths to gz‑JSON matrices (same length)
+    output_tsv     : optional file path – write the result as TSV if given
 
     Returns
     -------
@@ -277,12 +326,11 @@ def batch_mean_entropy(
     return out_df
 
 ###############################################################################
-# CLI entry-point
+# CLI entry‑point
 ###############################################################################
 
-
 def _cli() -> None:
-    parser = argparse.ArgumentParser(description="Teacher-student analysis toolkit")
+    parser = argparse.ArgumentParser(description="Teacher–student analysis toolkit")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     # Correlation subcommand
