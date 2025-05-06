@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# run_all.sh  –  batch all teacher–student analyses
+# -------------------------------------------------
+# Prerequisites
+#   pip install pandas numpy scipy
+#
+# Directory layout assumed
+#   ├─ teacher_student_distribution_analysis.py   # already on disk
+#   ├─ results.csv              # per-query metrics from PyTerrier
+#   ├─ runs/                    # *.trec run files   (teacher + students)
+#   └─ data/                    # training JSONL  +  gz-JSON score matrices
+#
+#   TEACHER_NAME        – value of the teacher in results.csv/name column
+#   TEACHER_RUN         – path to the teacher’s .trec inside runs/
+#   TRAIN_JSONL_*       – one or more training datasets
+#   SCORE_GZ_*          – matching gz-JSON distance matrices
+#
+# Usage
+#   chmod +x run_all.sh
+#   ./run_all.sh
+
+set -euo pipefail
+
+# ---------------------------------------------------------------------
+# USER CONFIGURATION  (EDIT THESE LINES)
+# ---------------------------------------------------------------------
+TEACHER_NAME="crossencoder"        # <-- adjust to your CSV column
+TEACHER_RUN="runs/teacher.trec"     # <-- the teacher's run file
+DATASET="msmarco-passage/trec-dl-2019/judged" # <-- dataset name
+MEASURE="nDCG@10"                   # <-- per-query metric to analyse
+
+# Training / score file pairs  (extend or modify as needed)
+TRAIN_JSONL=(
+  "data/bm25.16.jsonl"
+  "data/crossencoder.16.jsonl"
+  "data/random.16.jsonl"
+  "data/ensemble.16.jsonl"
+)
+SCORE_GZ=(
+  "data/bm25.scores.json.gz"
+  "data/crossencoder.scores.json.gz"
+  "data/random.scores.json.gz"
+  "data/ensemble.all.scores.json.gz"
+)
+# ---------------------------------------------------------------------
+
+mkdir -p analysis
+
+echo "1. Entropy–performance correlation"
+python teacher_student_distribution_analysis.py corr \
+  results.csv "$TEACHER_RUN" "$TEACHER_NAME" runs/ \
+  --measure "$MEASURE" --type entropy \
+  --out analysis/entropy_correlations.tsv
+
+echo "2. KL-divergence–performance correlation"
+python teacher_student_distribution_analysis.py corr \
+  results.csv "$TEACHER_RUN" "$TEACHER_NAME" runs/ \
+  --measure "$MEASURE" --type kl \
+  --out analysis/kl_correlations.tsv
+
+echo "3. Mean query entropy for every run"
+python teacher_student_distribution_analysis.py entropy \
+  runs/*.trec \
+  --out analysis/mean_entropy.tsv
+
+echo "4. Mean supremum distances for training datasets"
+python teacher_student_distribution_analysis.py supremum \
+  "${TRAIN_JSONL[@]}" \
+  --score_files "${SCORE_GZ[@]}" \
+  --out analysis/supremum.tsv
+
+echo "All analyses finished. Results are in the 'analysis/' directory."

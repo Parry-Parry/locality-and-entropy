@@ -1,19 +1,22 @@
 # teacher_student_distribution_analysis.py
 """
-Comprehensive utilities for analysing **teacher–student retrieval relationships**
-plus complementary dataset‑level statistics.
+Robust utilities for analysing **teacher-student retrieval relationships** and
+complementary dataset-level statistics.
 
-Included analyses
+Analyses provided
 -----------------
-1. **Entropy–performance correlation** (optionally writes TSV)
-2. **KL‑divergence–performance correlation** (optionally writes TSV)
-3. **Mean supremum distance per training dataset** (optionally writes TSV)
-4. **Mean query entropy per run file** (optionally writes TSV)
+1. **Entropy-performance correlation** (`corr --type entropy`)
+2. **KL-divergence-performance correlation** (`corr --type kl`)
+3. **Mean supremum distance per training dataset** (`supremum`)
+4. **Mean query entropy per run file** (`entropy`)
 
-Only lightweight dependencies are used: **pandas**, **numpy**, **scipy**,
-**json**, and **gzip**.
-All functions avoid loading large artefacts fully into memory where practical.
-Each analysis can be invoked programmatically or via the built‑in CLI.
+Features
+--------
+* **Dataset filtering**: optional substring filter so only run files whose
+  names contain that substring (case-insensitive) are processed.
+* Lightweight dependencies: **pandas**, **numpy**, **scipy**, **json**, **gzip**.
+* Streams JSONL training data; avoids loading large artefacts into memory.
+* Single-file module with CLI (`python teacher_student_distribution_analysis.py --help`).
 """
 from __future__ import annotations
 
@@ -30,27 +33,27 @@ import pandas as pd
 from scipy import stats
 
 ###############################################################################
-# Helpers
+# Helper utilities
 ###############################################################################
 
 def _shift_to_positive(arr: np.ndarray) -> np.ndarray:
-    """Shift array so that all values become strictly positive."""
+    """Shift array so that all elements become strictly positive."""
     if (arr <= 0).all():
         arr = arr + abs(arr.min()) + 1e-6
     return arr
 
 
 def _safe_probability_distribution(scores: np.ndarray) -> np.ndarray:
-    """Convert an array of (possibly non‑positive) scores to probabilities."""
+    """Convert arbitrary score array to a valid probability distribution."""
     scores = _shift_to_positive(scores.astype(float))
     return scores / scores.sum()
 
 ###############################################################################
-# TREC‑run parsing
+# Run-file parsing
 ###############################################################################
 
 def read_trec_run_scores(path: str | Path) -> Dict[str, Dict[str, float]]:
-    """Return {qid: {docid: score}} parsed from a TREC run file."""
+    """Return {qid: {docid: score}} from a TREC run file."""
     run: Dict[str, Dict[str, float]] = {}
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -62,11 +65,10 @@ def read_trec_run_scores(path: str | Path) -> Dict[str, Dict[str, float]]:
     return run
 
 ###############################################################################
-# Information‑theoretic measures
+# Information-theoretic measures
 ###############################################################################
 
 def shannon_entropy(scores: List[float]) -> float:
-    """Shannon entropy H(P) (base‑2) for a single query score list."""
     if not scores:
         return float("nan")
     p = _safe_probability_distribution(np.asarray(scores))
@@ -78,7 +80,6 @@ def kl_divergence_teacher_student(
     student: Dict[str, float],
     eps: float = 1e-12,
 ) -> float:
-    """D_KL(P‖Q) where P=teacher, Q=student (base‑2)."""
     docs = set(teacher) | set(student)
     t = np.array([teacher.get(d, 0.0) for d in docs])
     s = np.array([student.get(d, 0.0) for d in docs])
@@ -89,13 +90,13 @@ def kl_divergence_teacher_student(
     return float(np.sum(P * np.log2(P / Q)))
 
 ###############################################################################
-# 1. Entropy–performance correlation
+# 1. Entropy-performance correlation
 ###############################################################################
 
 def compute_entropy_dataframe(run_path: str | Path) -> pd.DataFrame:
     q2scores = read_trec_run_scores(run_path)
-    data = [(qid, shannon_entropy(list(scores.values()))) for qid, scores in q2scores.items()]
-    return pd.DataFrame(data, columns=["qid", "entropy"])
+    rows = [(qid, shannon_entropy(list(scores.values()))) for qid, scores in q2scores.items()]
+    return pd.DataFrame(rows, columns=["qid", "entropy"])
 
 
 def correlate_student_with_entropy(
@@ -105,16 +106,15 @@ def correlate_student_with_entropy(
     teacher_run_path: str | Path,
     output_tsv: str | Path | None = None,
 ) -> pd.DataFrame:
-    """Correlate each student model's query performance with teacher entropy."""
     df_metric = results_df[results_df["measure"] == measure].copy()
-    ent_df = compute_entropy_dataframe(teacher_run_path)
+    ent_df = compute_entropy_dataframe(teacher_run_path).set_index("qid")
 
     teacher_scores = (
         df_metric[df_metric["name"] == teacher_name][["qid", "value"]]
         .rename(columns={"value": "teacher_value"})
         .set_index("qid")
     )
-    teacher_aug = teacher_scores.join(ent_df.set_index("qid"), how="inner")
+    teacher_aug = teacher_scores.join(ent_df, how="inner")
 
     rows: List[Tuple[str, float, float, float, float]] = []
     for student_name, grp in df_metric[df_metric["name"] != teacher_name].groupby("name"):
@@ -126,20 +126,25 @@ def correlate_student_with_entropy(
         r_s, p_s = stats.spearmanr(merged["entropy"], merged["student_value"])
         rows.append((student_name, r_p, p_p, r_s, p_s))
 
-    out_df = pd.DataFrame(rows, columns=["student_name", "r_pearson", "p_pearson", "r_spearman", "p_spearman"])
-    out_df = out_df.sort_values("r_pearson", ascending=False, ignore_index=True)
+    out_df = pd.DataFrame(rows, columns=["student_name", "r_pearson", "p_pearson", "r_spearman", "p_spearman"])\
+              .sort_values("r_pearson", ascending=False, ignore_index=True)
     if output_tsv is not None:
         out_df.to_csv(output_tsv, sep="\t", index=False)
     return out_df
 
 ###############################################################################
-# 2. KL‑divergence–performance correlation
+# 2. KL-divergence-performance correlation
 ###############################################################################
 
-def _locate_student_run(model_name: str, run_dir: Path) -> Path | None:
+def _locate_student_run(model_name: str, run_dir: Path, dataset_filter: str | None) -> Path | None:
     pat = re.compile(re.escape(model_name), re.IGNORECASE)
     for p in run_dir.iterdir():
-        if p.is_file() and pat.search(p.name):
+        if not p.is_file():
+            continue
+        fname = p.name
+        if dataset_filter and dataset_filter.lower() not in fname.lower():
+            continue
+        if pat.search(fname):
             return p
     return None
 
@@ -147,9 +152,11 @@ def _locate_student_run(model_name: str, run_dir: Path) -> Path | None:
 def compute_kl_dataframe(teacher_run: str | Path, student_run: str | Path) -> pd.DataFrame:
     teacher = read_trec_run_scores(teacher_run)
     student = read_trec_run_scores(student_run)
-    qids = set(teacher) & set(student)
-    data = [(qid, kl_divergence_teacher_student(teacher[qid], student[qid])) for qid in qids]
-    return pd.DataFrame(data, columns=["qid", "KL"]) if data else pd.DataFrame(columns=["qid", "KL"])
+    rows = [
+        (qid, kl_divergence_teacher_student(teacher[qid], student[qid]))
+        for qid in (set(teacher) & set(student))
+    ]
+    return pd.DataFrame(rows, columns=["qid", "KL"]) if rows else pd.DataFrame(columns=["qid", "KL"])
 
 
 def correlate_student_with_kl(
@@ -159,13 +166,14 @@ def correlate_student_with_kl(
     run_dir: str | Path,
     teacher_run_path: str | Path,
     output_tsv: str | Path | None = None,
+    dataset_filter: str | None = None,
 ) -> pd.DataFrame:
-    run_dir = Path(run_dir)
     df_metric = results_df[results_df["measure"] == measure]
+    run_dir = Path(run_dir)
 
     rows: List[Tuple[str, float, float, float, float, float]] = []
     for student_name, grp in df_metric[df_metric["name"] != teacher_name].groupby("name"):
-        student_run = _locate_student_run(student_name, run_dir)
+        student_run = _locate_student_run(student_name, run_dir, dataset_filter)
         if student_run is None:
             continue
         kl_df = compute_kl_dataframe(teacher_run_path, student_run)
@@ -180,8 +188,8 @@ def correlate_student_with_kl(
         r_s, p_s = stats.spearmanr(merged["KL"], merged["student_value"])
         rows.append((student_name, mean_kl, r_p, p_p, r_s, p_s))
 
-    out_df = pd.DataFrame(rows, columns=["student_name", "mean_KL", "r_pearson", "p_pearson", "r_spearman", "p_spearman"])
-    out_df = out_df.sort_values("mean_KL", ignore_index=True)
+    out_df = pd.DataFrame(rows, columns=["student_name", "mean_KL", "r_pearson", "p_pearson", "r_spearman", "p_spearman"])\
+              .sort_values("mean_KL", ignore_index=True)
     if output_tsv is not None:
         out_df.to_csv(output_tsv, sep="\t", index=False)
     return out_df
@@ -198,11 +206,9 @@ def _load_distance_matrix(path: str | Path) -> Dict[str, Dict[str, float]]:
 def _stream_training_instances(path: str | Path):
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            obj = json.loads(line)
-            yield obj["doc_id_a"], obj.get("doc_id_b", [])
+            if (line := line.strip()):
+                obj = json.loads(line)
+                yield obj["doc_id_a"], obj.get("doc_id_b", [])
 
 
 def compute_mean_supremum(training_path: str | Path, score_path: str | Path) -> float:
@@ -223,7 +229,18 @@ def batch_mean_supremum(
     score_paths: Iterable[str | Path],
     output_tsv: str | Path | None = None,
 ) -> pd.DataFrame:
-    """Compute mean supremum distance for multiple dataset/score pairs."""
+    """Compute mean supremum distance for *parallel* lists of training/score files.
+
+    Parameters
+    ----------
+    training_paths : iterable of paths to JSONL files
+    score_paths    : iterable of paths to gz-JSON matrices (same length)
+    output_tsv     : optional file path - write the result as TSV if given
+
+    Returns
+    -------
+    DataFrame with columns [dataset, mean_supremum]
+    """
     training_paths = list(training_paths)
     score_paths = list(score_paths)
     if len(training_paths) != len(score_paths):
@@ -236,7 +253,7 @@ def batch_mean_supremum(
 
     out_df = pd.DataFrame(rows, columns=["dataset", "mean_supremum"])
     if output_tsv is not None:
-        out_df.to_csv(output_tsv, sep="\t", index=False)
+        out_df.to_csv(output_tsv, sep="	", index=False)
     return out_df
 
 ###############################################################################
@@ -244,26 +261,28 @@ def batch_mean_supremum(
 ###############################################################################
 
 def compute_mean_entropy(run_path: str | Path) -> float:
-    """Return mean Shannon entropy across all queries in one run."""
+    """Mean Shannon entropy across all queries in a single run file."""
     ent_df = compute_entropy_dataframe(run_path)
     return float(ent_df["entropy"].mean())
 
 
-def batch_mean_entropy(run_paths: Iterable[str | Path], output_tsv: str | Path | None = None) -> pd.DataFrame:
-    rows: List[Tuple[str, float]] = []
-    for rp in run_paths:
-        rows.append((Path(rp).stem, compute_mean_entropy(rp)))
+def batch_mean_entropy(
+    run_paths: Iterable[str | Path],
+    output_tsv: str | Path | None = None,
+) -> pd.DataFrame:
+    rows = [(Path(rp).stem, compute_mean_entropy(rp)) for rp in run_paths]
     out_df = pd.DataFrame(rows, columns=["run", "mean_entropy"])
     if output_tsv is not None:
-        out_df.to_csv(output_tsv, sep="\t", index=False)
+        out_df.to_csv(output_tsv, sep="	", index=False)
     return out_df
 
 ###############################################################################
-# CLI
+# CLI entry-point
 ###############################################################################
 
+
 def _cli() -> None:
-    parser = argparse.ArgumentParser(description="Teacher–student analysis toolkit")
+    parser = argparse.ArgumentParser(description="Teacher-student analysis toolkit")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     # Correlation subcommand
@@ -274,6 +293,7 @@ def _cli() -> None:
     p_corr.add_argument("run_dir")
     p_corr.add_argument("--measure", default="nDCG@10")
     p_corr.add_argument("--type", choices=["entropy", "kl"], default="entropy")
+    p_corr.add_argument("--dataset", help="Substring to filter run files (KL only)")
     p_corr.add_argument("--out", help="TSV output path")
 
     # Supremum subcommand
@@ -295,6 +315,26 @@ def _cli() -> None:
             res = correlate_student_with_entropy(
                 df, args.teacher_name, args.measure, args.teacher_run, args.out
             )
-        else:
+        else:  # KL
             res = correlate_student_with_kl(
-                df, args.teacher
+                df,
+                args.teacher_name,
+                args.measure,
+                args.run_dir,
+                args.teacher_run,
+                args.out,
+                dataset_filter=args.dataset,
+            )
+        print(res.to_string(index=False))
+
+    elif args.cmd == "supremum":
+        res = batch_mean_supremum(args.training_files, args.score_files, args.out)
+        print(res.to_string(index=False))
+
+    else:  # entropy
+        res = batch_mean_entropy(args.run_files, args.out)
+        print(res.to_string(index=False))
+
+
+if __name__ == "__main__":
+    _cli()

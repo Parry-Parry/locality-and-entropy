@@ -88,6 +88,20 @@ def run_topics(
         system_name = file.split(".")[2]
         dataset_id = file.split(".")[3]
         formatted_dataset = dataset_id.replace("/", "-")
+        # List of all BEIR datasets that include a test split
+        _beir_with_test = {
+            "dbpedia-entity",
+            "fever",
+            "fiqa",
+            "hotpotqa",
+            "nfcorpus",
+            "quora",
+            "scifact"
+        }
+
+        if dataset_id in _beir_with_test:
+            dataset_id = f"{dataset_id}/test"
+        
         model_name = os.path.basename(model_name_or_path)
         out_file = os.path.join(out_path, f"beir_{formatted_dataset}_{model_name}_{system_name}.res.gz")
         print(f"Output file: {out_file}")
@@ -95,7 +109,7 @@ def run_topics(
             dataset_id = '/'.join(dataset_id.split('-'))
 
         try:
-            dataset = irds.load(f"beir/{dataset_id}")
+            dataset = irds.load(f"{dataset_id}")
         except Exception as e:
             logging.info(f"Error loading dataset {dataset_id}: {e}")
             continue
