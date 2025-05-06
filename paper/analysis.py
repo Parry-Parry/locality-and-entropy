@@ -359,7 +359,7 @@ def _cli() -> None:
     args = parser.parse_args()
 
     if args.cmd == "corr":
-        df = pd.read_csv(args.results_csv)
+        df = pd.read_csv(args.results_csv, sep='\t')
         if args.type == "entropy":
             res = correlate_student_with_entropy(
                 df, args.teacher_name, args.measure, args.teacher_run, args.out
