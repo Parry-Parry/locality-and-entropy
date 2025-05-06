@@ -24,9 +24,10 @@ set -euo pipefail
 # ---------------------------------------------------------------------
 # USER CONFIGURATION  (EDIT THESE LINES)
 # ---------------------------------------------------------------------
-TEACHER_NAME="crossencoder"        # <-- adjust to your CSV column
+
 TEACHER_RUN="runs/teacher.trec"     # <-- the teacher's run file
 DATASET="msmarco-passage/trec-dl-2019/judged" # <-- dataset name
+TEACHER_NAME="$DATASET.crossencoder"        # <-- adjust to your CSV column
 MEASURE="nDCG@10"                   # <-- per-query metric to analyse
 
 # Training / score file pairs  (extend or modify as needed)
