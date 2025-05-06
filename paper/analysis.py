@@ -170,6 +170,7 @@ def correlate_student_with_entropy(
         student_scores = grp[["qid", "value"]].set_index("qid")
         merged = teacher_aug.join(student_scores, how="inner").rename(columns={"value": "student_value"})
         if merged.shape[0] < 2:
+            print(f"Warning: not enough data for {student_name} (only {merged.shape[0]} rows)")
             continue
         r_p, p_p = stats.pearsonr(merged["entropy"], merged["student_value"])
         r_s, p_s = stats.spearmanr(merged["entropy"], merged["student_value"])
@@ -193,6 +194,7 @@ def _locate_student_run(model_name: str, run_dir: Path, dataset_filter: str | No
             continue
         fname = p.name
         if dataset_filter and dataset_filter.lower() not in fname.lower():
+            print(f"Warning: skipping {fname} because it does not match the dataset filter '{dataset_filter}'")
             continue
         if pat.search(fname):
             return p
@@ -225,6 +227,7 @@ def correlate_student_with_kl(
     for student_name, grp in df_metric[df_metric["name"] != teacher_name].groupby("name"):
         student_run = _locate_student_run(student_name, run_dir, dataset_filter)
         if student_run is None:
+            print(f"Warning: no run file found for {student_name} in {run_dir}")
             continue
         kl_df = compute_kl_dataframe(teacher_run_path, student_run)
         if kl_df.empty:
