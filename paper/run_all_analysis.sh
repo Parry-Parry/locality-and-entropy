@@ -45,6 +45,14 @@ SCORE_GZ=(
 )
 # ---------------------------------------------------------------------
 
+shopt -s extglob nocaseglob
+if [[ -n "$DATASET" ]]; then
+  RUN_FILES=(runs/*"$DATASET"*.@(trec|trec.gz|res|res.gz))
+else
+  RUN_FILES=(runs/*.@(trec|trec.gz|res|res.gz))
+fi
+shopt -u extglob nocaseglob
+
 mkdir -p analysis
 
 echo "1. Entropy–performance correlation"
@@ -61,7 +69,7 @@ python paper/analysis.py corr \
 
 echo "3. Mean query entropy for every run"
 python paper/analysis.py entropy \
-  runs/*.rez.gz \
+  "${RUN_FILES[@]}" \
   --out analysis/mean_entropy.tsv
 
 echo "4. Mean supremum distances for training datasets"
