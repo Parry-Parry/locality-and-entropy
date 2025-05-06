@@ -5,7 +5,7 @@
 #   pip install pandas numpy scipy
 #
 # Directory layout assumed
-#   ├─ teacher_student_distribution_analysis.py   # already on disk
+#   ├─ paper/analysis.py   # already on disk
 #   ├─ results.csv              # per-query metrics from PyTerrier
 #   ├─ runs/                    # *.trec run files   (teacher + students)
 #   └─ data/                    # training JSONL  +  gz-JSON score matrices
@@ -48,24 +48,24 @@ SCORE_GZ=(
 mkdir -p analysis
 
 echo "1. Entropy–performance correlation"
-python teacher_student_distribution_analysis.py corr \
+python paper/analysis.py corr \
   results.csv "$TEACHER_RUN" "$TEACHER_NAME" runs/ \
   --measure "$MEASURE" --type entropy \
   --out analysis/entropy_correlations.tsv
 
 echo "2. KL-divergence–performance correlation"
-python teacher_student_distribution_analysis.py corr \
+python paper/analysis.py corr \
   results.csv "$TEACHER_RUN" "$TEACHER_NAME" runs/ \
   --measure "$MEASURE" --type kl \
   --out analysis/kl_correlations.tsv
 
 echo "3. Mean query entropy for every run"
-python teacher_student_distribution_analysis.py entropy \
+python paper/analysis.py entropy \
   runs/*.trec \
   --out analysis/mean_entropy.tsv
 
 echo "4. Mean supremum distances for training datasets"
-python teacher_student_distribution_analysis.py supremum \
+python paper/analysis.py supremum \
   "${TRAIN_JSONL[@]}" \
   --score_files "${SCORE_GZ[@]}" \
   --out analysis/supremum.tsv
