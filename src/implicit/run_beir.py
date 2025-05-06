@@ -110,11 +110,11 @@ def run_topics(
         dataset = irds.load(f"beir/{dataset_id}")
     except Exception as e:
         logging.info(f"Error loading dataset {dataset_id}: {e}")
-        continue
+        return
 
     if os.path.exists(out_file) and not dont_overwrite:
         logging.info(f"File already exists at {out_file}")
-        continue
+        return
 
     run = pt.io.read_results(file)
     run = run.sort_values(["qid", "score"], ascending=[True, False]).groupby("qid").head(depth)
@@ -124,7 +124,7 @@ def run_topics(
         )
     except Exception as e:
         logging.info(f"Error loading queries for dataset {dataset_id}: {e}")
-        continue
+        return
     run["query"] = run["qid"].map(lambda qid: queries[qid])
     docstore = dataset.docs_store()
     run['text'] = run['docno'].map(lambda docno: docstore.get(docno).text)
