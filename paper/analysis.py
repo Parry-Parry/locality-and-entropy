@@ -147,6 +147,7 @@ def correlate_student_with_entropy(
     """
     # Detect wide vs long format
     if "qid" not in results_df.columns:
+        print(f"{results_df.columns}")
         raise ValueError("`correlate_student_with_entropy` requires a per‑query "
                          "metrics table with a 'qid' column. Your results.csv "
                          "appears aggregated per run. Provide per‑query metrics "
