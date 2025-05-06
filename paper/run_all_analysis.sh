@@ -6,11 +6,11 @@
 #
 # Directory layout assumed
 #   ├─ paper/analysis.py   # already on disk
-#   ├─ results.csv              # per-query metrics from PyTerrier
+#   ├─ metrics/msmarco-passage-trec-dl-2019-judged-metrics.tsv.gz              # per-query metrics from PyTerrier
 #   ├─ runs/                    # *.trec run files   (teacher + students)
 #   └─ data/                    # training JSONL  +  gz-JSON score matrices
 #
-#   TEACHER_NAME        – value of the teacher in results.csv/name column
+#   TEACHER_NAME        – value of the teacher in metrics/msmarco-passage-trec-dl-2019-judged-metrics.tsv.gz/name column
 #   TEACHER_RUN         – path to the teacher’s .trec inside runs/
 #   TRAIN_JSONL_*       – one or more training datasets
 #   SCORE_GZ_*          – matching gz-JSON distance matrices
@@ -49,19 +49,19 @@ mkdir -p analysis
 
 echo "1. Entropy–performance correlation"
 python paper/analysis.py corr \
-  results.csv "$TEACHER_RUN" "$TEACHER_NAME" runs/ \
+  metrics/msmarco-passage-trec-dl-2019-judged-metrics.tsv.gz "$TEACHER_RUN" "$TEACHER_NAME" runs/ \
   --measure "$MEASURE" --type entropy \
   --out analysis/entropy_correlations.tsv
 
 echo "2. KL-divergence–performance correlation"
 python paper/analysis.py corr \
-  results.csv "$TEACHER_RUN" "$TEACHER_NAME" runs/ \
+  metrics/msmarco-passage-trec-dl-2019-judged-metrics.tsv.gz "$TEACHER_RUN" "$TEACHER_NAME" runs/ \
   --measure "$MEASURE" --type kl \
   --out analysis/kl_correlations.tsv
 
 echo "3. Mean query entropy for every run"
 python paper/analysis.py entropy \
-  runs/*.trec \
+  runs/*.rez.gz \
   --out analysis/mean_entropy.tsv
 
 echo "4. Mean supremum distances for training datasets"
