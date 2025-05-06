@@ -67,7 +67,7 @@ python paper/analysis.py corr \
   --measure "$MEASURE" --type kl \
   --out analysis/kl_correlations.tsv
 
-echo "3. Mean query entropy for every run"
+echo "3. Var query entropy for every run"
 python paper/analysis.py entropy \
   "${RUN_FILES[@]}" \
   --out analysis/mean_entropy.tsv

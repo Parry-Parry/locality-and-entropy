@@ -318,6 +318,11 @@ def compute_mean_entropy(run_path: str | Path) -> float:
     ent_df = compute_entropy_dataframe(run_path)
     return float(ent_df["entropy"].mean())
 
+def compute_variance_entropy(run_path: str | Path) -> float:
+    """Variance of Shannon entropy across all queries in a single run file."""
+    ent_df = compute_entropy_dataframe(run_path)
+    return float(ent_df["entropy"].var())
+
 
 def batch_mean_entropy(
     run_paths: Iterable[str | Path],
@@ -325,6 +330,16 @@ def batch_mean_entropy(
 ) -> pd.DataFrame:
     rows = [(Path(rp).stem, compute_mean_entropy(rp)) for rp in run_paths]
     out_df = pd.DataFrame(rows, columns=["run", "mean_entropy"])
+    if output_tsv is not None:
+        out_df.to_csv(output_tsv, sep="	", index=False)
+    return out_df
+
+def batch_variance_entropy(
+    run_paths: Iterable[str | Path],
+    output_tsv: str | Path | None = None,
+) -> pd.DataFrame:
+    rows = [(Path(rp).stem, compute_variance_entropy(rp)) for rp in run_paths]
+    out_df = pd.DataFrame(rows, columns=["run", "variance_entropy"])
     if output_tsv is not None:
         out_df.to_csv(output_tsv, sep="	", index=False)
     return out_df
@@ -384,7 +399,7 @@ def _cli() -> None:
         print(res.to_string(index=False))
 
     else:  # entropy
-        res = batch_mean_entropy(args.run_files, args.out)
+        res = batch_variance_entropy(args.run_files, args.out)
         print(res.to_string(index=False))
 
 
