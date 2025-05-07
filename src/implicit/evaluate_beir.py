@@ -39,7 +39,7 @@ def main(
             dataset_id = '/'.join(dataset_id.split('-'))
         if 'webis-touche2020' in dataset_id:
             dataset_id = 'webis-touche2020/v2'
-        pt_dataset = pt.get_dataset(f"irds:{dataset_id}")
+        pt_dataset = pt.get_dataset(f"irds:beir/{dataset_id}")
         metrics = [
             AP(rel=rel),
             NDCG(cutoff=10),
