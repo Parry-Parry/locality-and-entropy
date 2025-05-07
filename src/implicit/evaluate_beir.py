@@ -51,7 +51,7 @@ def main(
         runs = []
         names = []
         baseline_run = None
-        for file in files:
+        for file in subset:
             if file.endswith(".gz"):
                 name = file.strip(".res.gz")
                 run = pt.transformer.get_transformer(
