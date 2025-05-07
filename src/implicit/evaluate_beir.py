@@ -69,7 +69,7 @@ def main(
 
         df_eval = pt.Experiment(
             runs,
-            pt_dataset.get_topics(),
+            pt_dataset.get_topics("text"),
             pt_dataset.get_qrels(),
             perquery=per_query,
             eval_metrics=metrics,
