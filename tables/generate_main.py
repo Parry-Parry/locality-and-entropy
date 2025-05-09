@@ -7,20 +7,23 @@ import string
 
 def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):
     """
-    Assigns equivalence‐class letters to each domain within each (group, loss)
-    where TOST p_lower>alpha and p_upper>alpha.
+    Assigns equivalence‐class letters to each domain within each (group, loss, arch)
+    based on TOST: domains whose p_lower>alpha and p_upper>alpha get connected,
+    components labeled A, B, C…
     """
     records = []
-    for (group, loss), sub in df_tost.groupby(["group", "loss"]):
+    # now group by arch as well as group & loss
+    for (group, loss, arch), sub in df_tost.groupby(["group", "loss", "arch"]):
         G = nx.Graph()
         doms = pd.unique(sub[["domain1", "domain2"]].values.ravel())
         G.add_nodes_from(doms)
+        # connect any two domains that are equivalent under this arch/loss
         for _, row in sub.iterrows():
             if (row["measure"] == metric
                 and row["p_lower"] > alpha
                 and row["p_upper"] > alpha):
                 G.add_edge(row["domain1"], row["domain2"])
-        # find connected components and label them A, B, C…
+        # label components A, B, C…
         comps = sorted(nx.connected_components(G), key=lambda c: sorted(c)[0])
         for idx, comp in enumerate(comps):
             label = string.ascii_uppercase[idx]
@@ -28,6 +31,7 @@ def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):
                 records.append({
                     "group":    group,
                     "loss":     loss,
+                    "arch":     arch,
                     "domain":   d,
                     "eq_class": label
                 })
@@ -37,7 +41,7 @@ def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):
 def generate_table(out_dir, alpha=0.05):
     groups = ["dl19", "dl20", "beir"]
 
-    # 1) load the long‐form "means" and "tost" files
+    # 1) load the long‐form means and tost files
     means = {
         g: pd.read_csv(os.path.join(out_dir, f"means_{g}.tsv"), sep="\t")
         for g in groups
@@ -47,7 +51,7 @@ def generate_table(out_dir, alpha=0.05):
         for g in groups
     }
 
-    # 2) build the equivalence‐class table
+    # 2) annotate equivalence classes per (group,loss,arch)
     eq_frames = []
     for g in groups:
         df_eq = annotate_equivalence(tosts[g], alpha=alpha)
@@ -55,20 +59,20 @@ def generate_table(out_dir, alpha=0.05):
         eq_frames.append(df_eq)
     df_eq_all = pd.concat(eq_frames, ignore_index=True)
 
-    # 3) merge eq_class into each means DataFrame, then concat
+    # 3) merge eq_class into the means and concat
     df_merged = []
     for g in groups:
         df = means[g].copy()
         df["group"] = g
         df = df.merge(
             df_eq_all[df_eq_all.group == g],
-            on=["group", "loss", "domain"],
+            on=["group", "loss", "arch", "domain"],
             how="left"
         )
         df_merged.append(df)
     df_all = pd.concat(df_merged, ignore_index=True)
 
-    # 4) drop the CE-Teacher baseline entirely
+    # 4) drop CE-Teacher baseline entirely
     df_all = df_all[df_all.arch != "CE-Teacher"]
 
     # 5) normalize metric labels
@@ -77,7 +81,7 @@ def generate_table(out_dir, alpha=0.05):
         "nDCG@10":   "nDCG"
     })
 
-    # 6) pivot only the 'value' into a MultiIndex (group, arch, metric)
+    # 6) pivot only the 'value' into (group,arch,metric)
     table = df_all.pivot_table(
         index=["loss", "domain"],
         columns=["group", "arch", "metric"],
@@ -86,7 +90,7 @@ def generate_table(out_dir, alpha=0.05):
         dropna=False
     )
 
-    # 7) ensure every (loss,domain) × (group,arch,metric) appears
+    # 7) reindex to full grid of combinations
     full_idx = pd.MultiIndex.from_product(
         [df_all.loss.unique(), df_all.domain.unique()],
         names=["loss", "domain"]
@@ -97,10 +101,12 @@ def generate_table(out_dir, alpha=0.05):
     )
     table = table.reindex(index=full_idx, columns=full_cols)
 
-    # 8) build a lookup for eq_class superscripts
-    eq_map = df_eq_all.set_index(["group", "loss", "domain"])["eq_class"].to_dict()
+    # 8) build eq_class lookup per (group,loss,arch,domain)
+    eq_map = df_eq_all.set_index(
+        ["group", "loss", "arch", "domain"]
+    )["eq_class"].to_dict()
 
-    # 9) assemble the LaTeX table
+    # 9) assemble LaTeX
     latex = []
     latex.append(r"\begin{table}[t]")
     latex.append(r"  \centering")
@@ -109,14 +115,16 @@ def generate_table(out_dir, alpha=0.05):
     latex.append(r"  \begin{tabular}{ll" + "cccc" * len(groups) + "}")
     latex.append(r"  \toprule")
 
-    # header row with superscripts
+    # header superscripts: BM25 for BE, Cross-Encoder for CE
     sp = []
     for g in groups:
         subs = df_eq_all[df_eq_all.group == g]
-        be = subs[subs.domain == "BM25"].eq_class
-        ce = subs[subs.domain == "Cross-Encoder"].eq_class
-        be_cl = be.iloc[0] if not be.empty else ""
-        ce_cl = ce.iloc[0] if not ce.empty else ""
+        be_cl = ""
+        ce_cl = ""
+        filt = subs[(subs.arch=="BE") & (subs.domain=="BM25")]["eq_class"]
+        if not filt.empty: be_cl = filt.iloc[0]
+        filt = subs[(subs.arch=="CE") & (subs.domain=="Cross-Encoder")]["eq_class"]
+        if not filt.empty: ce_cl = filt.iloc[0]
         sp.append(f"{be_cl},{ce_cl}" if ce_cl else be_cl)
 
     latex.append(
@@ -142,7 +150,7 @@ def generate_table(out_dir, alpha=0.05):
     )
     latex.append(r"  \midrule")
 
-    # body rows: append superscript per cell
+    # body rows: append superscript per (group,arch,domain)
     for loss in table.index.levels[0]:
         for dom in table.loc[loss].index:
             row_vals = []
@@ -150,7 +158,7 @@ def generate_table(out_dir, alpha=0.05):
                 for arch in ["BE", "CE"]:
                     for m in ["nDCG", "MAP"]:
                         v = table[g, arch, m].loc[(loss, dom)]
-                        sup = eq_map.get((g, loss, dom), "")
+                        sup = eq_map.get((g, loss, arch, dom), "")
                         if pd.isna(v):
                             cell = "–"
                         else:
@@ -161,10 +169,12 @@ def generate_table(out_dir, alpha=0.05):
     latex.append(r"\end{tabular}")
     latex.append(r"\end{table}")
 
+    # write to file
     output = "\n".join(latex)
     out_path = os.path.join(out_dir, "table.tex")
     with open(out_path, "w") as f:
         f.write(output)
+    print(f"Wrote LaTeX table with per-arch equivalence superscripts to {out_path}")
 
 
 if __name__ == "__main__":
