@@ -49,7 +49,7 @@ def tost(x, y, bound_pct=1.0):
     p_val, (t_low, p_low, df_low), (t_high, p_high, df_high) = \
         ws.ttost_ind(x, y, low_eq, high_eq)
 
-    return p_val, p_low, p_high, bound, diff_mean
+    return p_val, p_low, p_high
 
 def parse_run_meta(fname):
     base = fname.replace(".res.gz","")
