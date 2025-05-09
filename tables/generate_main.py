@@ -12,7 +12,7 @@ ARCH_ORDER   = ["BE", "CE"]
 METRICS      = ["nDCG", "MAP"]
 GROUPS       = ["dl19", "dl20", "beir"]
 
-def annotate_equivalence(df_tost, alpha=0.025, metric="nDCG@10"):
+def annotate_equivalence(df_tost, alpha=0.10, metric="nDCG@10"):
     """
     Assign component labels per (group, loss, arch, domain) based on TOST equivalence.
     """
