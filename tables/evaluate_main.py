@@ -77,6 +77,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
 
             if "dl-" in ds_key:
                 subset = [f for f in files if ds_key in f]
+                print(subset)
             else:
                 subset = [f for f in files if f.split("_")[1] == ds]
             runs, names = [], []
