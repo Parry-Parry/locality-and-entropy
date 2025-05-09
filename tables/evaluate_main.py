@@ -203,21 +203,30 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
             measures = sub_la['measure'].unique()
 
             for m in measures:
-                # restrict to this measure once, then pivot on qid×domain
-                sub = sub_la[sub_la['measure'] == m].copy()
-                # make a qid×domain matrix of values
-                df = sub.pivot(index='qid', columns='domain', values='value')
-                # drop any query that isn’t present in all domains
-                df = df.dropna(axis=0, how='any')
-                
+                sub = sub_la[sub_la['measure'] == m]
                 for i, d1 in enumerate(doms):
                     for d2 in doms[i+1:]:
-                        if d1 not in df.columns or d2 not in df.columns:
-                            continue  # no data for this pair in this measure
-                        
-                        x = df[d1].values
-                        y = df[d2].values
-                        
+                        # get qids present in both domains for this measure
+                        ids1 = set(sub.loc[sub['domain'] == d1, 'qid'])
+                        ids2 = set(sub.loc[sub['domain'] == d2, 'qid'])
+                        common_qids = sorted(ids1 & ids2)
+                        if not common_qids:
+                            continue
+
+                        # build lookup dicts for fast value access
+                        val_map1 = dict(zip(
+                            sub.loc[sub['domain'] == d1, 'qid'],
+                            sub.loc[sub['domain'] == d1, 'value']
+                        ))
+                        val_map2 = dict(zip(
+                            sub.loc[sub['domain'] == d2, 'qid'],
+                            sub.loc[sub['domain'] == d2, 'value']
+                        ))
+
+                        # extract aligned arrays
+                        x = np.array([val_map1[q] for q in common_qids])
+                        y = np.array([val_map2[q] for q in common_qids])
+
                         p, p_lo, p_hi = tost(x, y)
                         records.append({
                             "group":   group_name,
