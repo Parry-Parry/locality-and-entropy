@@ -6,7 +6,7 @@ import numpy as np
 import string
 
 # fixed orders
-LOSS_ORDER   = ["LCE", "RankNet", "MarginMSE", "KL"]
+LOSS_ORDER   = ["LCE", "RankNet", "marginMSE", "KL"]
 DOMAIN_ORDER = ["Random", "BM25", "Cross-Encoder", "Ensemble"]
 ARCH_ORDER   = ["BE", "CE"]
 METRICS      = ["nDCG", "MAP"]
