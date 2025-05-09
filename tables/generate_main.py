@@ -40,7 +40,7 @@ def annotate_equivalence(df_tost, alpha=0.10, metric="nDCG@10"):
     return pd.DataFrame.from_records(records)
 
 
-def generate_table(out_dir, alpha=0.05):
+def generate_table(out_dir, alpha=0.1):
     # 1) load means and tost tables
     means = {
         g: pd.read_csv(os.path.join(out_dir, f"means_{g}.tsv"), sep="\t")
