@@ -76,7 +76,11 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
             metric_names = [str(m) for m in metrics]
 
             if "dl-" in ds_key:
-                formatted_ds_key = ds_key.replace("-","_")
+                if '19' in ds_key:
+                    formatted_ds_key = "19"
+                elif '20' in ds_key:
+                    formatted_ds_key = "20"
+                
                 subset = [f for f in files if formatted_ds_key in f]
             else:
                 subset = [f for f in files if f.split("_")[1] == ds]
