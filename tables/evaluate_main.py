@@ -109,6 +109,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
             df_per['arch']   = df_per.name.map(lambda x: parse_run_meta(x)["arch"])
             df_per['tmp_value'] = df_per['value']
             df_per.drop(columns=['value'], inplace=True)
+            print(df_per['measure'].unique())
             # ——— convert to long form ———
             df_per = df_per.melt(
                 id_vars=['name','qid','domain','loss','arch'],
