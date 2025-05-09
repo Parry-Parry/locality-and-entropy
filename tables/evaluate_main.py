@@ -122,7 +122,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
 
 
 
-            print(df_per.columns)
+            print(df_per.head())
 
             # attach run metadata
             df_per['domain'] = df_per.name.map(lambda x: parse_run_meta(x)["domain"])
