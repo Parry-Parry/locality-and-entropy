@@ -72,14 +72,13 @@ def generate_table(out_dir, alpha=0.05):
 
     # begin latex output
     latex = []
-    latex.append('% requires \usepackage{booktabs,multirow}')
     latex.append('\begin{table}[t]')
-    latex.append('  \centering')
-    latex.append('  \footnotesize')
-    latex.append('  \setlength{\tabcolsep}{3pt}')
-    header = ('  \begin{tabular}{ll' + 'cccc' * len(groups) + '}')
+    latex.append(r'  \centering')
+    latex.append(r'  \footnotesize')
+    latex.append(r'  \setlength{\tabcolsep}{3pt}')
+    header = (r'  \begin{tabular}{ll' + 'cccc' * len(groups) + '}')
     latex.append(header)
-    latex.append('  \toprule')
+    latex.append(r'  \toprule')
     # first header row with superscripts
     sp = []
     for g in groups:
@@ -91,14 +90,14 @@ def generate_table(out_dir, alpha=0.05):
         be_cl = subs[subs['domain']=='BM25']['eq_class'].iloc[0] if 'BM25' in subs['domain'].values else ""
         ce_cl = subs[subs['domain']=='Cross-Encoder']['eq_class'].iloc[0] if 'Cross-Encoder' in subs['domain'].values else ""
         sp.append(f"{be_cl},{ce_cl}" if ce_cl else be_cl)
-    latex.append(f"    &  & \multicolumn{{4}}{{c}}{{TREC DL’19\textsuperscript{{{sp[0]}}}}} & \multicolumn{{4}}{{c}}{{TREC DL’20\textsuperscript{{{sp[1]}}}}} & \multicolumn{{4}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\")
-    latex.append('  \cmidrule(lr){3-6}\cmidrule(lr){7-10}\cmidrule(lr){11-14}')
+    latex.append(rf"    &  & \multicolumn{{4}}{{c}}{{TREC DL'19\textsuperscript{{{sp[0]}}}}} & \multicolumn{{4}}{{c}}{{TREC DL'20\textsuperscript{{{sp[1]}}}}} & \multicolumn{{4}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\")
+    latex.append(r'  \cmidrule(lr){3-6}\cmidrule(lr){7-10}\cmidrule(lr){11-14}')
     # second header row
-    latex.append('    &  & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} \\')
-    latex.append('  \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}')
+    latex.append(rf'    &  & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} \\')
+    latex.append(r'  \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}')
     # metric row
-    latex.append('    Loss & Domain & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP \\')
-    latex.append('  \midrule')
+    latex.append(r'    Loss & Domain & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP \\')
+    latex.append(r'  \midrule')
 
     # body rows
     for loss in table.index.levels[0]:
