@@ -115,6 +115,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
             # attach parsed metadata
             metas = [parse_run_meta(n) for n in df_per["name"]]
             df_meta = pd.DataFrame(metas)
+            print(df_meta.columns)
             df_per = pd.concat([df_per.reset_index(drop=True), df_meta], axis=1)
 
             all_perdfs.append(df_per)
