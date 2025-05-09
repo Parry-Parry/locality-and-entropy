@@ -3,6 +3,7 @@ import gzip
 import itertools
 import argparse
 import numpy as np
+from tqdm import tqdm
 
 # Training / score file pairs  (extend or modify as needed)
 TRAIN_JSONL=(

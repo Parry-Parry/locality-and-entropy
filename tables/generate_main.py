@@ -1,153 +1,128 @@
 import os
-import random
 import pandas as pd
-from typing import Any
-from dataclasses import dataclass
-from fire import Fire
+import networkx as nx
+import string
 
-# Constants
-DATASETS = {
-    'TREC Deep Learning 2019': 'trec-dl-2019',
-    'TREC Deep Learning 2020': 'trec-dl-2020',
-}
-MODELS = {'Cross-Encoder': 'cat', 'Bi-Encoder': 'dot'}
-N_NEG = [2, 4, 8, 16]
-LOSS_FUNCTIONS = ['LCE', 'MarginMSE', 'RankNet', 'KL_Divergence']
-SOURCES = ['random', 'bm25', 'crossencoder', 'ensemble']
-TARGET_METRIC = 'nDCG@10'
-ROUNDING = 3
-
-
-@dataclass
-class Item:
-    dataset: str
-    model_type: str
-    n_neg: int
-    loss_function: str
-    source: str
-    content: Any
-    sig : bool = False
-
-
-def parse_name(file_name: str, row, sig):
-    name = os.path.basename(file_name)
-    dataset = None
-    for k, v in DATASETS.items():
-        if v in name:
-            dataset = k
-    if dataset is None:
-        raise ValueError(f"Dataset not found in {name}")
-        return None
-    model_type = 'cat' if 'cat' in name else 'dot'
-    loss = None
-    for loss_function in LOSS_FUNCTIONS:
-        if loss_function in name:
-            loss = loss_function
-    if loss is None:
-        raise ValueError(f"Loss function not found in {name}")
-        return None
-    n_count = None
-    for negative_count in N_NEG[::-1]:
-        if f".{negative_count}" in name:
-            n_count = negative_count
-    negative_source = None
-    for source in SOURCES:
-        if source in name:
-            negative_source = source
-    if negative_source is None:
-        raise ValueError(f"Negative source not found in {name}")
-        return None
-    return Item(dataset=dataset, model_type=model_type, loss_function=loss, source=negative_source, n_neg=n_count, content=row, sig=sig)
+def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):  # use NDCG@10 for header
+    records = []
+    # group by group and loss
+    for (group, loss), sub in df_tost.groupby(["group", "loss"]):
+        # within each, build graph on domain nodes
+        G = nx.Graph()
+        # get unique domains
+        doms = pd.unique(sub[["domain1", "domain2"]].values.ravel())
+        G.add_nodes_from(doms)
+        for _, row in sub.iterrows():
+            if row['metric'] == metric and row['p_lower'] > alpha and row['p_upper'] > alpha:
+                G.add_edge(row['domain1'], row['domain2'])
+        comps = list(nx.connected_components(G))
+        comps.sort(key=lambda comp: sorted(comp)[0])
+        for idx, comp in enumerate(comps):
+            label = string.ascii_uppercase[idx]
+            for d in comp:
+                records.append({
+                    "group": group,
+                    "loss": loss,
+                    "domain": d,
+                    "eq_class": label
+                })
+    return pd.DataFrame.from_records(records)
 
 
-def generate_table(output: str, run_file: str = None, use_dummy_data=False):
-    assert run_file is not None or use_dummy_data, "Either a run file or the use_dummy_data flag must be set"
-    # Use a test dataframe if the flag is True
-    if use_dummy_data:
-        # Create a dummy dataframe for testing
-        data = {
-            'run': [],
-            'nDCG@10': [],
-            'sig_nDCG@10': []
-        }
-        for loss_function in LOSS_FUNCTIONS:
-            for n_neg in N_NEG:
-                for dataset, ref in DATASETS.items():
-                    for source in SOURCES:
-                        data['run'].append(f"{ref}-{MODELS['Cross-Encoder']}-{loss_function}-{source}.{n_neg}-distilled")
-                        data['nDCG@10'].append(round(random.uniform(0.0, 1.0), 3))
-                        data['sig_nDCG@10'].append(random.choice([True, False]))
-        runs = pd.DataFrame(data)
-    else:
-        runs = pd.read_csv(run_file, sep='\t')
+def generate_table(out_dir, alpha=0.05):
+    # load mean tables and tost tables
+    groups = ['dl19', 'dl20', 'beir']
+    means = {}
+    tosts = {}
+    for g in groups:
+        means[g] = pd.read_csv(os.path.join(out_dir, f"means_{g}.tsv"), sep="\t")
+        tosts[g] = pd.read_csv(os.path.join(out_dir, f"tost_{g}.tsv"), sep="\t")
 
-    items = []
+    # annotate eq classes for each group
+    eq_frames = []
+    for g in groups:
+        df_eq = annotate_equivalence(tosts[g], alpha=alpha)
+        df_eq['group'] = g
+        eq_frames.append(df_eq)
+    df_eq_all = pd.concat(eq_frames, ignore_index=True)
 
-    # Parse the runs and create items
-    for i, row in runs.iterrows():
-        run_name = row['run']
-        val = getattr(row, TARGET_METRIC)
-        val = round(val, ROUNDING)
-        sig = getattr(row, f'sig_{TARGET_METRIC}')
-        item = parse_name(run_name, val, sig)
-        if item is None:
-            continue
-        items.append(item)
+    # merge eq into means
+    df_merged = []
+    for g in groups:
+        df = means[g].copy()
+        df['group'] = g
+        df = df.merge(
+            df_eq_all[df_eq_all['group'] == g],
+            on=['group','loss','domain'],
+            how='left'
+        )
+        df_merged.append(df)
+    df_all = pd.concat(df_merged, ignore_index=True)
 
-    # Group by loss_function and n_neg
-    grouped_items = {}
-    for item in items:
-        key = item.loss_function
-        if key not in grouped_items:
-            grouped_items[key] = []
-        grouped_items[key].append(item)
-        # sort by n_neg
-        grouped_items[key] = sorted(grouped_items[key], key=lambda x: x.n_neg)
+    # pivot for latex
+    # rows: loss, domain
+    # columns: group -> arch -> metric
+    df_all = df_all.rename(columns={'ndcg_cut_10': 'NDCG@10', 'map': 'MAP'})
+    table = df_all.pivot_table(
+        index=['loss','domain'],
+        columns=['group','arch'],
+        values=['NDCG@10','MAP','eq_class'],
+        aggfunc='first'
+    )
 
-    # Generate LaTeX table
-    latex_code = []
+    # begin latex output
+    latex = []
+    latex.append('% requires \usepackage{booktabs,multirow}')
+    latex.append('\begin{table}[t]')
+    latex.append('  \centering')
+    latex.append('  \footnotesize')
+    latex.append('  \setlength{\tabcolsep}{3pt}')
+    header = ('  \begin{tabular}{ll' + 'cccc' * len(groups) + '}')
+    latex.append(header)
+    latex.append('  \toprule')
+    # first header row with superscripts
+    sp = []
+    for g in groups:
+        # get eq classes for BE and CE for this group (first loss suffices)
+        subs = df_eq_all[df_eq_all['group']==g]
+        # pick any loss domain combination
+        row = subs.iloc[0]
+        # for BE and CE
+        be_cl = subs[subs['domain']=='BM25']['eq_class'].iloc[0] if 'BM25' in subs['domain'].values else ""
+        ce_cl = subs[subs['domain']=='Cross-Encoder']['eq_class'].iloc[0] if 'Cross-Encoder' in subs['domain'].values else ""
+        sp.append(f"{be_cl},{ce_cl}" if ce_cl else be_cl)
+    latex.append(f"    &  & \multicolumn{{4}}{{c}}{{TREC DL’19\textsuperscript{{{sp[0]}}}}} & \multicolumn{{4}}{{c}}{{TREC DL’20\textsuperscript{{{sp[1]}}}}} & \multicolumn{{4}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\")
+    latex.append('  \cmidrule(lr){3-6}\cmidrule(lr){7-10}\cmidrule(lr){11-14}')
+    # second header row
+    latex.append('    &  & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} \\')
+    latex.append('  \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}')
+    # metric row
+    latex.append('    Loss & Domain & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP \\')
+    latex.append('  \midrule')
 
-    # Table preamble
-    latex_code.append(r"\begin{table*}[tb]")
-    latex_code.append(r"\centering")
-    latex_code.append(r"\begin{tabular}{ll|" + "c" * (len(DATASETS) * len(SOURCES)) + r"}")
-    latex_code.append(r"\toprule")
+    # body rows
+    for loss in table.index.levels[0]:
+        for dom in table.loc[loss].index:
+            row = table.loc[(loss, dom)]
+            vals = []
+            for g in groups:
+                for arch in ['BE','CE']:
+                    ndcg = row['NDCG@10', g, arch]
+                    m = row['MAP', g, arch]
+                    vals.append(f"{ndcg:.2f}")
+                    vals.append(f"{m:.2f}")
+            latex.append(f"  {loss} & {dom} & " + " & ".join(vals) + " \\")
+    latex.append('  \bottomrule')
+    latex.append('\end{tabular}')
+    latex.append('\end{table}')
 
-    # Table Header with \multicolumn for datasets
-    latex_code.append(r"&& " +
-                      " & ".join([f"\\multicolumn{{{len(SOURCES)}}}{{c}}{{{dataset}}}" for dataset in DATASETS]) + r" \\")
-    latex_code.append(r"Loss Function & Group Size & " + " & ".join(SOURCES * len(DATASETS)) + r" \\")
-    latex_code.append(r"\midrule")
+    # print or save
+    output = '\n'.join(latex)
+    print(output)
 
-    # Table Data
-    for loss_function, group in grouped_items.items():
-        for n_neg in N_NEG:
-            row = [f"{loss_function}"]
-            row.append(str(n_neg))
-            for dataset in DATASETS:
-                for source in SOURCES:
-                    matching_items = [item for item in group if item.dataset == dataset and item.source == source and item.n_neg == n_neg]
-                    val = str(matching_items[0].content) if matching_items else "N/A"
-                    sig = matching_items[0].sig if matching_items else False
-                    if sig:
-                        val = val + r"^*"
-                    else:
-                        val = val + r'\phantom{^*}'
-                    val = f"${val}$"
-                    row.append(val)
-            latex_code.append(" & ".join(row) + r" \\")
-        latex_code.append(r"\midrule")
-
-    latex_code.append(r"\bottomrule")
-    latex_code.append(r"\end{tabular}")
-    latex_code.append(r"\caption{Performance on various datasets and loss functions}")
-    latex_code.append(r"\end{table*}")
-
-    # Join all lines into a single LaTeX string
-    latex_str = "\n".join(latex_code)
-    with open(output, 'w') as f:
-        f.write(latex_str)
-
-
-if __name__ == "__main__":
-    Fire(generate_table)
+if __name__ == '__main__':
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument('--out_dir', required=True)
+    args = p.parse_args()
+    generate_table(args.out_dir)
