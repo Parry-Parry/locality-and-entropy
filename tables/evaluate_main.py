@@ -25,7 +25,7 @@ def parse_run_meta(fname):
         if loss.lower() in base.lower():
             meta["loss"] = loss
             break
-    meta["arch"] = "CE" if "crossencoder" in base.lower() else "BE"
+    meta["arch"] = "CE" if "cat" in base.lower() else "BE"
     dom = None
     for tag, name in [
         ("random","Random"),
