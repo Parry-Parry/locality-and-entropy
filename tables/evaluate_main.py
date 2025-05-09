@@ -11,9 +11,8 @@ if not pt.started():
 
 
 def tost(x, y, low_eq=-0.01, high_eq=0.01):
-    p_val = ws.ttost_ind(x, y, low_eq, high_eq)
-    print(p_val)
-    p_val, (t_low, p_low), (t_high, p_high) = ws.ttost_ind(x, y, low_eq, high_eq)
+    p_val, (t_low,  p_low,  df_low), \
+            (t_high, p_high, df_high) = ws.ttost_ind(x, y, low_eq, high_eq)
     return p_val, p_low, p_high
 
 
