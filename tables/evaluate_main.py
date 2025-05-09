@@ -101,6 +101,8 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
                 baseline=0 if baseline else None
             )
 
+            print(df_per.columns)
+
             # attach run metadata
             df_per['domain'] = df_per.name.map(lambda x: parse_run_meta(x)["domain"])
             df_per['loss']   = df_per.name.map(lambda x: parse_run_meta(x)["loss"])
