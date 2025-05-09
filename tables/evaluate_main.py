@@ -45,9 +45,9 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
     beir_files = [f for f in files if "beir" in f]
     dataset_ids = sorted({f.split("_")[1] for f in beir_files})
     groups = {
-        "dl19": ["dl-2019"],
-        "dl20": ["dl-2020"],
-        "beir": [ds for ds in dataset_ids if ds not in {"dl-2019","dl-2020"}],
+        "dl19": ["dl_2019"],
+        "dl20": ["dl_2020"],
+        "beir": [ds for ds in dataset_ids if ds not in {"dl_2019","dl_2020"}],
     }
 
     for group_name, ds_list in groups.items():
@@ -61,7 +61,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
                 ds_key = '/'.join(ds_key.split('-'))
             if 'webis-touche2020' in ds_key:
                 ds_key = 'webis-touche2020/v2'
-            if 'dl-' in ds_key:
+            if 'dl_' in ds_key:
                 if '19' in ds_key:
                     ds_key = 'msmarco-passage/trec-dl-2019/judged'
                 elif '20' in ds_key:
@@ -76,8 +76,8 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
             metric_names = [str(m) for m in metrics]
 
             if "dl-" in ds_key:
-                subset = [f for f in files if ds_key in f]
-                print(subset)
+                formatted_ds_key = ds_key.replace("-","_")
+                subset = [f for f in files if formatted_ds_key in f]
             else:
                 subset = [f for f in files if f.split("_")[1] == ds]
             runs, names = [], []
