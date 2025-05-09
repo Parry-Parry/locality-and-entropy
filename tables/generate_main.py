@@ -1,15 +1,17 @@
+#!/usr/bin/env python3
 import os
 import pandas as pd
 import networkx as nx
+import numpy as np
 import string
 
-def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):  # use NDCG@10 for header
+def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):
+    """
+    Build equivalence‐class labels per (group, loss, domain) based on TOST p-values.
+    """
     records = []
-    # group by group and loss
     for (group, loss), sub in df_tost.groupby(["group", "loss"]):
-        # within each, build graph on domain nodes
         G = nx.Graph()
-        # get unique domains
         doms = pd.unique(sub[["domain1", "domain2"]].values.ravel())
         G.add_nodes_from(doms)
         for _, row in sub.iterrows():
@@ -21,24 +23,32 @@ def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):  # use NDCG@10 
             label = string.ascii_uppercase[idx]
             for d in comp:
                 records.append({
-                    "group": group,
-                    "loss": loss,
-                    "domain": d,
+                    "group":   group,
+                    "loss":    loss,
+                    "domain":  d,
                     "eq_class": label
                 })
     return pd.DataFrame.from_records(records)
 
 
 def generate_table(out_dir, alpha=0.05):
-    # load mean tables and tost tables
+    """
+    Loads the long‐form means_{g}.tsv and tost_{g}.tsv, annotates equivalence,
+    pivots into a complete grid, and prints a LaTeX table.
+    """
     groups = ['dl19', 'dl20', 'beir']
-    means = {}
-    tosts = {}
-    for g in groups:
-        means[g] = pd.read_csv(os.path.join(out_dir, f"means_{g}.tsv"), sep="\t")
-        tosts[g] = pd.read_csv(os.path.join(out_dir, f"tost_{g}.tsv"), sep="\t")
 
-    # annotate eq classes for each group
+    # 1) load
+    means = {
+        g: pd.read_csv(os.path.join(out_dir, f"means_{g}.tsv"), sep="\t")
+        for g in groups
+    }
+    tosts = {
+        g: pd.read_csv(os.path.join(out_dir, f"tost_{g}.tsv"), sep="\t")
+        for g in groups
+    }
+
+    # 2) annotate eq-classes
     eq_frames = []
     for g in groups:
         df_eq = annotate_equivalence(tosts[g], alpha=alpha)
@@ -46,6 +56,7 @@ def generate_table(out_dir, alpha=0.05):
         eq_frames.append(df_eq)
     df_eq_all = pd.concat(eq_frames, ignore_index=True)
 
+    # 3) merge eq_classes into means
     df_merged = []
     for g in groups:
         df = means[g].copy()
@@ -58,45 +69,60 @@ def generate_table(out_dir, alpha=0.05):
         df_merged.append(df)
     df_all = pd.concat(df_merged, ignore_index=True)
 
-    # pivot for latex
-    # rows: loss, domain
-    # columns: group -> arch -> metric
+    # 4) normalize metric names
     df_all['metric'] = df_all['measure'].map({
         'AP(rel=2)': 'MAP',
         'nDCG@10':   'nDCG'
     })
+
+    # 5) pivot into full grid, preserving all columns
+    aggfuncs = {
+        'value':    'mean',
+        'eq_class': lambda s: s.dropna().iloc[0] if s.notna().any() else np.nan
+    }
     table = df_all.pivot_table(
         index=['loss','domain'],
         columns=['group','arch','metric'],
         values=['value','eq_class'],
-        aggfunc='first'
+        aggfunc=aggfuncs,
+        dropna=False
     )
 
-    # begin latex output
+    # 6) reindex to guarantee every combination appears
+    full_idx = pd.MultiIndex.from_product(
+        [df_all.loss.unique(), df_all.domain.unique()],
+        names=['loss','domain']
+    )
+    full_cols = pd.MultiIndex.from_product(
+        [groups, ['BE','CE'], ['nDCG','MAP']],
+        names=['group','arch','metric']
+    )
+    table = table.reindex(index=full_idx, columns=full_cols)
+
+    # 7) begin LaTeX assembly
     latex = []
-    latex.append('\begin{table}[t]')
+    latex.append(r'\begin{table}[t]')
     latex.append(r'  \centering')
     latex.append(r'  \footnotesize')
     latex.append(r'  \setlength{\tabcolsep}{3pt}')
-    header = (r'  \begin{tabular}{ll' + 'cccc' * len(groups) + '}')
-    latex.append(header)
+    latex.append(r'  \begin{tabular}{ll' + 'cccc' * len(groups) + '}')
     latex.append(r'  \toprule')
-    # first header row with superscripts
+
+    # header superscripts
     sp = []
     for g in groups:
-        # get eq classes for BE and CE for this group (first loss suffices)
-        subs = df_eq_all[df_eq_all['group']==g]
-        # pick any loss domain combination
-        row = subs.iloc[0]
-        # for BE and CE
-        be_cl = subs[subs['domain']=='BM25']['eq_class'].iloc[0] if 'BM25' in subs['domain'].values else ""
-        ce_cl = subs[subs['domain']=='Cross-Encoder']['eq_class'].iloc[0] if 'Cross-Encoder' in subs['domain'].values else ""
+        subs = df_eq_all[df_eq_all['group'] == g]
+        be_cl = (subs[subs['domain']=='BM25']['eq_class'].iloc[0]
+                 if 'BM25' in subs['domain'].values else "")
+        ce_cl = (subs[subs['domain']=='Cross-Encoder']['eq_class'].iloc[0]
+                 if 'Cross-Encoder' in subs['domain'].values else "")
         sp.append(f"{be_cl},{ce_cl}" if ce_cl else be_cl)
+
     latex.append(
-    rf"    &  & "
-    rf"\multicolumn{{4}}{{c}}{{TREC DL'19\textsuperscript{{{sp[0]}}}}} "
-    rf"& \multicolumn{{4}}{{c}}{{TREC DL'20\textsuperscript{{{sp[1]}}}}} "
-    rf"& \multicolumn{{4}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\"
+        rf"    &  & "
+        rf"\multicolumn{{4}}{{c}}{{TREC DL'19\textsuperscript{{{sp[0]}}}}} "
+        rf"& \multicolumn{{4}}{{c}}{{TREC DL'20\textsuperscript{{{sp[1]}}}}} "
+        rf"& \multicolumn{{4}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\"
     )
     latex.append(r'  \cmidrule(lr){3-6}\cmidrule(lr){7-10}\cmidrule(lr){11-14}')
     latex.append(
@@ -105,30 +131,32 @@ def generate_table(out_dir, alpha=0.05):
         r'& \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} '
         r'& \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} \\'
     )
-    latex.append(r'  \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}')
-    latex.append(r'    Loss & Domain & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP \\')
+    latex.append(
+        r'  \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}'
+        r'\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}'
+    )
+    latex.append(
+        r'    Loss & Domain & nDCG & MAP & nDCG & MAP & nDCG & MAP & '
+        r'nDCG & MAP & nDCG & MAP & nDCG & MAP \\'
+    )
     latex.append(r'  \midrule')
 
+    # 8) table body
     for loss in table.index.levels[0]:
         for dom in table.loc[loss].index:
             vals = []
             for g in groups:
                 for arch in ['BE','CE']:
-                    # nDCG then MAP
-                    ndcg  = table['value', g, arch, 'nDCG'].loc[(loss,dom)]
-                    map_  = table['value', g, arch, 'MAP'].loc[(loss,dom)]
-                    vals.append(f"{ndcg:.2f}")
-                    vals.append(f"{map_:.2f}")
+                    for m in ['nDCG','MAP']:
+                        v = table['value', g, arch, m].loc[(loss, dom)]
+                        vals.append('–' if pd.isna(v) else f"{v:.2f}")
             latex.append(f"  {loss} & {dom} & " + " & ".join(vals) + r" \\")
-    latex.append(r'\bottomrule')
+    latex.append(r'  \bottomrule')
     latex.append(r'\end{tabular}')
     latex.append(r'\end{table}')
 
     print("\n".join(latex))
 
-    # print or save
-    output = '\n'.join(latex)
-    print(output)
 
 if __name__ == '__main__':
     import argparse
