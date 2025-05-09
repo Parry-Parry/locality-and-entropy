@@ -71,7 +71,11 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
                 pt_ds = pt.get_dataset(f"irds:{ds_key}")
                 rel = 2
             else:
-                pt_ds = pt.get_dataset(f"irds:beir/{ds_key}")
+                try:
+                    pt_ds = pt.get_dataset(f"irds:beir/{ds_key}")
+                except Exception as e:
+                    print(f"Error loading dataset {ds_key}: {e}")
+                    continue
             topics, qrels = pt_ds.get_topics("text"), pt_ds.get_qrels()
             metrics = [AP(rel=rel), NDCG(cutoff=10)]
             metric_names = [str(m) for m in metrics]
