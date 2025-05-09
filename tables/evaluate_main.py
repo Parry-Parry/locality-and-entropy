@@ -67,9 +67,9 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
                 ds_key = 'webis-touche2020/v2'
             if 'dl-' in ds_key:
                 if '19' in ds_key:
-                    ds_key = 'msmarco-passage/msmarco-passage/trec-dl-2019/judged'
+                    ds_key = 'msmarco-passage/trec-dl-2019/judged'
                 elif '20' in ds_key:
-                    ds_key = 'msmarco-passage/msmarco-passage/trec-dl-2020/judged'
+                    ds_key = 'msmarco-passage/trec-dl-2020/judged'
             # load the dataset
                 pt_ds = pt.get_dataset(f"irds:{ds_key}")
                 rel = 2
