@@ -77,9 +77,9 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
 
             if "dl-" in ds_key:
                 if '19' in ds_key:
-                    formatted_ds_key = "19"
+                    formatted_ds_key = "dl_2019"
                 elif '20' in ds_key:
-                    formatted_ds_key = "20"
+                    formatted_ds_key = "dl_2020"
                 
                 subset = [f for f in files if formatted_ds_key in f]
             else:
