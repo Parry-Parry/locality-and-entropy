@@ -92,12 +92,20 @@ def generate_table(out_dir, alpha=0.05):
         be_cl = subs[subs['domain']=='BM25']['eq_class'].iloc[0] if 'BM25' in subs['domain'].values else ""
         ce_cl = subs[subs['domain']=='Cross-Encoder']['eq_class'].iloc[0] if 'Cross-Encoder' in subs['domain'].values else ""
         sp.append(f"{be_cl},{ce_cl}" if ce_cl else be_cl)
-    latex.append(rf"    &  & \multicolumn{{4}}{{c}}{{TREC DL'19\textsuperscript{{{sp[0]}}}}} & \multicolumn{{4}}{{c}}{{TREC DL'20\textsuperscript{{{sp[1]}}}}} & \multicolumn{{4}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\")
+    latex.append(
+    rf"    &  & "
+    rf"\multicolumn{{4}}{{c}}{{TREC DL'19\textsuperscript{{{sp[0]}}}}} "
+    rf"& \multicolumn{{4}}{{c}}{{TREC DL'20\textsuperscript{{{sp[1]}}}}} "
+    rf"& \multicolumn{{4}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\"
+    )
     latex.append(r'  \cmidrule(lr){3-6}\cmidrule(lr){7-10}\cmidrule(lr){11-14}')
-    # second header row
-    latex.append(rf'    &  & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} & \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} \\')
+    latex.append(
+        r'    &  & '
+        r'\multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} '
+        r'& \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} '
+        r'& \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} \\'
+    )
     latex.append(r'  \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}')
-    # metric row
     latex.append(r'    Loss & Domain & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP \\')
     latex.append(r'  \midrule')
 
