@@ -10,11 +10,46 @@ if not pt.started():
     pt.init()
 
 
-def tost(x, y, low_eq=-0.01, high_eq=0.01):
-    p_val, (t_low,  p_low,  df_low), \
-            (t_high, p_high, df_high) = ws.ttost_ind(x, y, low_eq, high_eq)
-    return p_val, p_low, p_high
+import numpy as np
 
+def tost(x, y, bound_pct=1.0):
+    """
+    Perform two one-sided t-tests (TOST) for equivalence, with bounds set
+    to ±bound_pct% of the observed difference in sample means.
+
+    Parameters
+    ----------
+    x : array-like
+        Sample data for group 1.
+    y : array-like
+        Sample data for group 2.
+    bound_pct : float, optional
+        Equivalence margin as a percentage of the observed mean difference
+        (default is 1.0, i.e. ±1 %).
+
+    Returns
+    -------
+    p_val : float
+        Combined p-value for the equivalence test.
+    p_low : float
+        P-value for the lower‐bound test (H0: μ1−μ2 ≤ −bound).
+    p_high : float
+        P-value for the upper‐bound test (H0: μ1−μ2 ≥ +bound).
+    bound : float
+        Absolute equivalence margin used (±bound).
+    diff_mean : float
+        Observed difference in sample means (mean(x) − mean(y)).
+    """
+    # observed difference in means
+    diff_mean = np.mean(x) - np.mean(y)
+    # equivalence margin = bound_pct% of |diff_mean|
+    bound = abs(diff_mean) * (bound_pct / 100.0)
+    low_eq, high_eq = -bound, bound
+
+    p_val, (t_low, p_low, df_low), (t_high, p_high, df_high) = \
+        ws.ttost_ind(x, y, low_eq, high_eq)
+
+    return p_val, p_low, p_high, bound, diff_mean
 
 def parse_run_meta(fname):
     base = fname.replace(".res.gz","")
