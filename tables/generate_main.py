@@ -13,7 +13,7 @@ def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):  # use NDCG@10 
         doms = pd.unique(sub[["domain1", "domain2"]].values.ravel())
         G.add_nodes_from(doms)
         for _, row in sub.iterrows():
-            if row['metric'] == metric and row['p_lower'] > alpha and row['p_upper'] > alpha:
+            if row['measure'] == metric and row['p_lower'] > alpha and row['p_upper'] > alpha:
                 G.add_edge(row['domain1'], row['domain2'])
         comps = list(nx.connected_components(G))
         comps.sort(key=lambda comp: sorted(comp)[0])
