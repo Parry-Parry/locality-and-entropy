@@ -31,12 +31,12 @@ def parse_run_meta(fname):
     dom = None
     if "random" in base.lower():
         dom = "Random"
-    elif "bm25" in base.lower():
-        dom = "BM25"
     elif "ensemble" in base.lower():
         dom = "Ensemble"
     elif "crossencoder" in base.lower():
         dom = "Cross-Encoder"
+    elif "bm25" in base.lower():
+        dom = "BM25"
     meta["domain"] = dom or "UNK"
     return meta
 
