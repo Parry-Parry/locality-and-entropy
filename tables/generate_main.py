@@ -13,7 +13,7 @@ def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):  # use NDCG@10 
         doms = pd.unique(sub[["domain1", "domain2"]].values.ravel())
         G.add_nodes_from(doms)
         for _, row in sub.iterrows():
-            if row['measure'] == metric and row['p_lower'] > alpha and row['p_upper'] > alpha:
+            if row['metric'] == metric and row['p_lower'] > alpha and row['p_upper'] > alpha:
                 G.add_edge(row['domain1'], row['domain2'])
         comps = list(nx.connected_components(G))
         comps.sort(key=lambda comp: sorted(comp)[0])
@@ -46,13 +46,12 @@ def generate_table(out_dir, alpha=0.05):
         eq_frames.append(df_eq)
     df_eq_all = pd.concat(eq_frames, ignore_index=True)
 
-    # merge eq into means
     df_merged = []
     for g in groups:
         df = means[g].copy()
         df['group'] = g
         df = df.merge(
-            df_eq_all[df_eq_all['group'] == g],
+            df_eq_all[df_eq_all.group == g],
             on=['group','loss','domain'],
             how='left'
         )
@@ -62,11 +61,14 @@ def generate_table(out_dir, alpha=0.05):
     # pivot for latex
     # rows: loss, domain
     # columns: group -> arch -> metric
-    df_all = df_all.rename(columns={'ndcg_cut_10': 'NDCG@10', 'map': 'MAP'})
+    df_all['metric'] = df_all['measure'].map({
+        'AP(rel=2)': 'MAP',
+        'nDCG@10':   'nDCG'
+    })
     table = df_all.pivot_table(
         index=['loss','domain'],
-        columns=['group','arch'],
-        values=['NDCG@10','MAP','eq_class'],
+        columns=['group','arch','metric'],
+        values=['score','eq_class'],
         aggfunc='first'
     )
 
@@ -99,21 +101,22 @@ def generate_table(out_dir, alpha=0.05):
     latex.append(r'    Loss & Domain & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP & nDCG & MAP \\')
     latex.append(r'  \midrule')
 
-    # body rows
     for loss in table.index.levels[0]:
         for dom in table.loc[loss].index:
-            row = table.loc[(loss, dom)]
             vals = []
             for g in groups:
                 for arch in ['BE','CE']:
-                    ndcg = row['NDCG@10', g, arch]
-                    m = row['MAP', g, arch]
+                    # nDCG then MAP
+                    ndcg  = table['score', g, arch, 'nDCG'].loc[(loss,dom)]
+                    map_  = table['score', g, arch, 'MAP'].loc[(loss,dom)]
                     vals.append(f"{ndcg:.2f}")
-                    vals.append(f"{m:.2f}")
-            latex.append(f"  {loss} & {dom} & " + " & ".join(vals) + " \\")
-    latex.append('  \bottomrule')
-    latex.append('\end{tabular}')
-    latex.append('\end{table}')
+                    vals.append(f"{map_:.2f}")
+            latex.append(f"  {loss} & {dom} & " + " & ".join(vals) + r" \\")
+    latex.append(r'\bottomrule')
+    latex.append(r'\end{tabular}')
+    latex.append(r'\end{table}')
+
+    print("\n".join(latex))
 
     # print or save
     output = '\n'.join(latex)
