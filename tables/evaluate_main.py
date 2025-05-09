@@ -126,6 +126,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
         df_all.to_csv(join(out_dir, f"perquery_{group_name}.tsv.gz"), sep="\t", index=False)
 
         # compute mean metrics by loss/domain/arch
+        print(df_all.columns)
         df_means = (
             df_all
             .groupby(["loss","domain","arch"])[metric_names]
