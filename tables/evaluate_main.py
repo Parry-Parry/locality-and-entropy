@@ -94,6 +94,9 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
             baseline_run = None
             for fn in subset:
                 runname = fn.replace(".res.gz","")
+                if 'median' in runname or 'quartile' in runname:
+                    continue
+
                 run = pt.transformer.get_transformer(pt.io.read_results(join(run_dir, fn)))
                 if baseline and runname.endswith(f"_{baseline}"):
                     baseline_run = run
