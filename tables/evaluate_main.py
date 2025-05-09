@@ -44,7 +44,7 @@ def tost(x, y, bound_pct=1.0):
     diff_mean = np.mean(x) - np.mean(y)
     # equivalence margin = bound_pct% of |diff_mean|
     bound = abs(diff_mean) * (bound_pct / 100.0)
-    low_eq, high_eq = -bound, bound
+    low_eq, high_eq = abs(diff_mean)-bound, abs(diff_mean)+bound
 
     p_val, (t_low, p_low, df_low), (t_high, p_high, df_high) = \
         ws.ttost_ind(x, y, low_eq, high_eq)
