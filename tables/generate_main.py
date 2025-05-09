@@ -6,19 +6,17 @@ import numpy as np
 import string
 
 def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):
-    """
-    Build equivalence‐class labels per (group, loss, domain) based on TOST p-values.
-    """
     records = []
     for (group, loss), sub in df_tost.groupby(["group", "loss"]):
         G = nx.Graph()
         doms = pd.unique(sub[["domain1", "domain2"]].values.ravel())
         G.add_nodes_from(doms)
         for _, row in sub.iterrows():
-            if row['measure'] == metric and row['p_lower'] > alpha and row['p_upper'] > alpha:
+            if (row['measure'] == metric
+                and row['p_lower'] > alpha
+                and row['p_upper'] > alpha):
                 G.add_edge(row['domain1'], row['domain2'])
-        comps = list(nx.connected_components(G))
-        comps.sort(key=lambda comp: sorted(comp)[0])
+        comps = sorted(nx.connected_components(G), key=lambda c: sorted(c)[0])
         for idx, comp in enumerate(comps):
             label = string.ascii_uppercase[idx]
             for d in comp:
@@ -32,13 +30,9 @@ def annotate_equivalence(df_tost, alpha=0.05, metric="nDCG@10"):
 
 
 def generate_table(out_dir, alpha=0.05):
-    """
-    Loads the long‐form means_{g}.tsv and tost_{g}.tsv, annotates equivalence,
-    pivots into a complete grid, and prints a LaTeX table.
-    """
     groups = ['dl19', 'dl20', 'beir']
 
-    # 1) load
+    # 1) load all the long‐form means and tost files
     means = {
         g: pd.read_csv(os.path.join(out_dir, f"means_{g}.tsv"), sep="\t")
         for g in groups
@@ -48,7 +42,7 @@ def generate_table(out_dir, alpha=0.05):
         for g in groups
     }
 
-    # 2) annotate eq-classes
+    # 2) annotate equivalence classes
     eq_frames = []
     for g in groups:
         df_eq = annotate_equivalence(tosts[g], alpha=alpha)
@@ -56,7 +50,7 @@ def generate_table(out_dir, alpha=0.05):
         eq_frames.append(df_eq)
     df_eq_all = pd.concat(eq_frames, ignore_index=True)
 
-    # 3) merge eq_classes into means
+    # 3) merge eq_class into each means DataFrame, then concat
     df_merged = []
     for g in groups:
         df = means[g].copy()
@@ -69,26 +63,22 @@ def generate_table(out_dir, alpha=0.05):
         df_merged.append(df)
     df_all = pd.concat(df_merged, ignore_index=True)
 
-    # 4) normalize metric names
+    # 4) normalize metric names to simple labels
     df_all['metric'] = df_all['measure'].map({
         'AP(rel=2)': 'MAP',
         'nDCG@10':   'nDCG'
     })
 
-    # 5) pivot into full grid, preserving all columns
-    aggfuncs = {
-        'value':    'mean',
-        'eq_class': lambda s: s.dropna().iloc[0] if s.notna().any() else np.nan
-    }
+    # 5) pivot ONLY the 'value' into (group,arch,metric)
     table = df_all.pivot_table(
         index=['loss','domain'],
         columns=['group','arch','metric'],
-        values=['value','eq_class'],
-        aggfunc=aggfuncs,
+        values='value',
+        aggfunc='mean',
         dropna=False
     )
 
-    # 6) reindex to guarantee every combination appears
+    # 6) reindex to the full desired grid
     full_idx = pd.MultiIndex.from_product(
         [df_all.loss.unique(), df_all.domain.unique()],
         names=['loss','domain']
@@ -99,7 +89,7 @@ def generate_table(out_dir, alpha=0.05):
     )
     table = table.reindex(index=full_idx, columns=full_cols)
 
-    # 7) begin LaTeX assembly
+    # 7) build LaTeX
     latex = []
     latex.append(r'\begin{table}[t]')
     latex.append(r'  \centering')
@@ -108,7 +98,7 @@ def generate_table(out_dir, alpha=0.05):
     latex.append(r'  \begin{tabular}{ll' + 'cccc' * len(groups) + '}')
     latex.append(r'  \toprule')
 
-    # header superscripts
+    # header superscripts from df_eq_all
     sp = []
     for g in groups:
         subs = df_eq_all[df_eq_all['group'] == g]
@@ -141,14 +131,14 @@ def generate_table(out_dir, alpha=0.05):
     )
     latex.append(r'  \midrule')
 
-    # 8) table body
+    # 8) fill in rows, printing “–” for missing cells
     for loss in table.index.levels[0]:
         for dom in table.loc[loss].index:
             vals = []
             for g in groups:
                 for arch in ['BE','CE']:
                     for m in ['nDCG','MAP']:
-                        v = table['value', g, arch, m].loc[(loss, dom)]
+                        v = table[g, arch, m].loc[(loss, dom)]
                         vals.append('–' if pd.isna(v) else f"{v:.2f}")
             latex.append(f"  {loss} & {dom} & " + " & ".join(vals) + r" \\")
     latex.append(r'  \bottomrule')
