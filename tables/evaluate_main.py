@@ -115,12 +115,10 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
                 names=names,
                 baseline=0 if baseline else None
             )
-            # attach parsed metadata
-            metas = [parse_run_meta(n) for n in df_per["name"]]
-            df_meta = pd.DataFrame(metas)
-            print(df_meta.columns)
-            df_per = pd.concat([df_per.reset_index(drop=True), df_meta], axis=1)
 
+            df_per['domain'] = df_per.name.apply(lambda x: parse_run_meta(x)["domain"])
+            df_per['loss'] = df_per.name.apply(lambda x: parse_run_meta(x)["loss"])
+            df_per['arch'] = df_per.name.apply(lambda x: parse_run_meta(x)["arch"])
             all_perdfs.append(df_per)
 
         # combine (for BEIR) or single‐ds (for DL)
