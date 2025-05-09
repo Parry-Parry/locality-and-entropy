@@ -11,8 +11,8 @@ if not pt.started():
 
 
 def tost(x, y, low_eq=-0.01, high_eq=0.01):
-    p_low, p_high, _, _ = ws.ttost_ind(x, y, low_eq, high_eq)
-    return p_low, p_high
+    p_val, (t_low, p_low), (t_high, p_high)= ws.ttost_ind(x, y, low_eq, high_eq)
+    return p_val, p_low, p_high
 
 
 def parse_run_meta(fname):
@@ -163,7 +163,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
                     for m in sub_la['measure'].unique():
                         x = sub_la[(sub_la['domain']==d1) & (sub_la['measure']==m)]['value']
                         y = sub_la[(sub_la['domain']==d2) & (sub_la['measure']==m)]['value']
-                        p_lo, p_hi = tost(x, y)
+                        p, p_lo, p_hi = tost(x, y)
                         records.append({
                             "group":   group_name,
                             "loss":    loss,
@@ -171,6 +171,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
                             "domain1": d1,
                             "domain2": d2,
                             "measure": m,
+                            "p_value": p,
                             "p_lower": p_lo,
                             "p_upper": p_hi
                         })
