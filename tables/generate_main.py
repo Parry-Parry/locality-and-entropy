@@ -68,7 +68,7 @@ def generate_table(out_dir, alpha=0.05):
     table = df_all.pivot_table(
         index=['loss','domain'],
         columns=['group','arch','metric'],
-        values=['score','eq_class'],
+        values=['value','eq_class'],
         aggfunc='first'
     )
 
@@ -107,8 +107,8 @@ def generate_table(out_dir, alpha=0.05):
             for g in groups:
                 for arch in ['BE','CE']:
                     # nDCG then MAP
-                    ndcg  = table['score', g, arch, 'nDCG'].loc[(loss,dom)]
-                    map_  = table['score', g, arch, 'MAP'].loc[(loss,dom)]
+                    ndcg  = table['value', g, arch, 'nDCG'].loc[(loss,dom)]
+                    map_  = table['value', g, arch, 'MAP'].loc[(loss,dom)]
                     vals.append(f"{ndcg:.2f}")
                     vals.append(f"{map_:.2f}")
             latex.append(f"  {loss} & {dom} & " + " & ".join(vals) + r" \\")
