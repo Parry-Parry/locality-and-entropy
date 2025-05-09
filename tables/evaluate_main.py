@@ -144,6 +144,8 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
             .mean()
             .reset_index()
         )
+        print(f"Means for {group_name}:")
+        print(len(df_means))
         df_means.to_csv(join(out_dir, f"means_{group_name}.tsv"), 
                         sep="\t", index=False)
 
