@@ -105,7 +105,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
                 baseline=0 if baseline else None
             )
             # attach parsed metadata
-            metas = [parse_run_meta(n) for n in df_per["run"]]
+            metas = [parse_run_meta(n) for n in df_per["name"]]
             df_meta = pd.DataFrame(metas)
             df_per = pd.concat([df_per.reset_index(drop=True), df_meta], axis=1)
 
