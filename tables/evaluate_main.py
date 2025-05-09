@@ -19,8 +19,16 @@ def tost(x, y, low_eq=-0.01, high_eq=0.01):
 # parse metadata from filename
 def parse_run_meta(fname):
     base = fname.replace(".res.gz","")
+    if '16' not in base:
+        meta = {
+            'loss': 'LCE',
+            'arch': 'CE-Teacher',
+            'domain': 'BM25'
+        }
+        return meta
     meta = {}
     # loss
+    meta["loss"] = "UNK"
     for loss in ("LCE","marginMSE","RankNet","KL"):
         if loss.lower() in base.lower():
             meta["loss"] = loss
@@ -129,6 +137,18 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
         # TOST across domains for each loss/arch/metric
         records = []
         for (loss, arch), sub in df_all.groupby(["loss","arch"]):
+            if arch == "CE-Teacher":
+                records.append({
+                    "group": group_name,
+                    "loss": loss,
+                    "arch": arch,
+                    "domain1": "BM25",
+                    "domain2": "BM25",
+                    "metric": "N/A",
+                    "p_lower": 1.0,
+                    "p_upper": 1.0
+                })
+                continue
             doms = sub["domain"].unique().tolist()
             for i in range(len(doms)):
                 for j in range(i+1, len(doms)):
