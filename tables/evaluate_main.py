@@ -53,8 +53,25 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
     for group_name, ds_list in groups.items():
         all_perdfs = []
         for ds in ds_list:
-            # … [dataset‐ID normalization as before] …
-            # load pt_ds, topics, qrels
+            # standardize the PT dataset id
+            ds_key = ds
+            if ds in {"dbpedia-entity","fever","fiqa","hotpotqa","nfcorpus","quora","scifact"}:
+                ds_key = f"{ds}/test"
+            if 'cqadupstack' in ds_key:
+                ds_key = '/'.join(ds_key.split('-'))
+            if 'webis-touche2020' in ds_key:
+                ds_key = 'webis-touche2020/v2'
+            if 'dl-' in ds_key:
+                if '19' in ds_key:
+                    ds_key = 'msmarco-passage/trec-dl-2019/judged'
+                elif '20' in ds_key:
+                    ds_key = 'msmarco-passage/trec-dl-2020/judged'
+            # load the dataset
+                pt_ds = pt.get_dataset(f"irds:{ds_key}")
+                rel = 2
+            else:
+                pt_ds = pt.get_dataset(f"irds:beir/{ds_key}")
+            topics, qrels = pt_ds.get_topics("text"), pt_ds.get_qrels()
             metrics = [AP(rel=rel), NDCG(cutoff=10)]
             metric_names = [str(m) for m in metrics]
 
