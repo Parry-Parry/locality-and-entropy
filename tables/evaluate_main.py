@@ -75,7 +75,10 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
             metrics = [AP(rel=rel), NDCG(cutoff=10)]
             metric_names = [str(m) for m in metrics]
 
-            subset = [f for f in files if f.split("_")[1] == ds]
+            if "dl-" in ds_key:
+                subset = [f for f in files if ds_key in f]
+            else:
+                subset = [f for f in files if f.split("_")[1] == ds]
             runs, names = [], []
             baseline_run = None
             for fn in subset:
@@ -111,7 +114,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
                 print(f"  baseline: {baseline}")
                 print(topics.head())
                 print(qrels.head())
-                
+
 
 
             print(df_per.columns)
