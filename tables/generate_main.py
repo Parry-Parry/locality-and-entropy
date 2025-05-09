@@ -161,7 +161,10 @@ def generate_table(out_dir, alpha=0.05):
     latex.append(r"\end{tabular}")
     latex.append(r"\end{table}")
 
-    print("\n".join(latex))
+    output = "\n".join(latex)
+    out_path = os.path.join(out_dir, "table.tex")
+    with open(out_path, "w") as f:
+        f.write(output)
 
 
 if __name__ == "__main__":
