@@ -75,10 +75,12 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
         "upper_quartile",
         "below_median",
         "above_median",
-        "inner_quartiles"
+        "inner_quartiles",
+        "outlier_quartiles"
     }
+    breakpoint()
     files = [f for f in files if any(s in f for s in ALLOWED)]
-
+    breakpoint()
     # discover datasets from BEIR files
     beir_files = [f for f in files if "beir" in f]
     dataset_ids = sorted({f.split("_")[1] for f in beir_files})
