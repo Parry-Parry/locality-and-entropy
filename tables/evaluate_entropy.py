@@ -132,6 +132,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
                 split = m.group(1)
                 if split in ALLOWED:
                     subset.append(fn)
+            breakpoint()
 
             runs, names = [], []
             for fn in sorted(subset):
