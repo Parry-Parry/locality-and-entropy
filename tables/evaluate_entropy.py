@@ -140,6 +140,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
                 names.append(runname)
 
             if not runs:
+                print(f"No runs found for {ds_key}")
                 continue
 
             # evaluate per‐query
@@ -161,6 +162,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
 
         # combine all per‐query
         if not all_per:
+            print(f"No per-query data for {group_name}")
             continue
         df_all = pd.concat(all_per, ignore_index=True)
         df_all.to_csv(join(out_dir, f"perquery_cat_{group_name}.tsv.gz"),
