@@ -46,19 +46,17 @@ def parse_run_meta(fname):
     else:
         meta["arch"] = "BE"
     # domain
-    if "cat-" in base.lower():
-        meta["domain"] = "Cross-Encoder"
-    else:
-        for tag, name in [
-            ("lower_quartile", "lower_quartile"),
-            ("upper_quartile", "upper_quartile"),
-            ("below_median", "below_median"),
-            ("above_median", "above_median"),
-            ("inner_quartiles", "inner_quartiles"),
-        ]:
-            if tag in base.lower():
-                meta["domain"] = name
-                break
+
+    for tag, name in [
+        ("lower_quartile", "lower_quartile"),
+        ("upper_quartile", "upper_quartile"),
+        ("below_median", "below_median"),
+        ("above_median", "above_median"),
+        ("inner_quartiles", "inner_quartiles"),
+    ]:
+        if tag in base.lower():
+            meta["domain"] = name
+            break
     return meta
 
 
