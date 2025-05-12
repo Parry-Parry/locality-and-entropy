@@ -160,6 +160,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1, baseline: str = None):
             df_per['domain'] = df_per.name.map(lambda x: parse_run_meta(x)["domain"])
             df_per['loss']   = df_per.name.map(lambda x: parse_run_meta(x)["loss"])
             df_per['arch']   = df_per.name.map(lambda x: parse_run_meta(x)["arch"])
+            df_per['dataset_id'] = ds
             df_per['measure'] = df_per.measure.map(str)
 
             all_perdfs.append(df_per)
