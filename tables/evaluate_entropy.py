@@ -77,6 +77,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
         "above_median",
         "inner_quartiles"
     }
+    files = [f for f in files if any(s in f for s in ALLOWED)]
 
     # discover datasets from BEIR files
     beir_files = [f for f in files if "beir" in f]
@@ -119,19 +120,17 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
                     print(f"Error loading dataset {ds_key}: {e}")
                     continue
             topics, qrels = pt_ds.get_topics("text"), pt_ds.get_qrels()
+            metric_names = [str(m) for m in metrics]
 
-            # select only CAT quartile/median runs for this dataset
-            subset = []
-            for fn in files:
-                if f"_{ds}_" not in fn or "_cat-" not in fn:
-                    continue
-                name = fn.replace(".res.gz", "")
-                m = re.match(rf".*_{ds}_cat-[^-]+-([^_]+)-\d+$", fn.replace(".res.gz", ""))
-                if not m:
-                    continue
-                split = m.group(1)
-                if split in ALLOWED:
-                    subset.append(fn)
+            if "dl-" in ds_key:
+                if '19' in ds_key:
+                    formatted_ds_key = "dl_2019"
+                elif '20' in ds_key:
+                    formatted_ds_key = "dl_2020"
+                
+                subset = [f for f in files if formatted_ds_key in f]
+            else:
+                subset = [f for f in files if f.split("_")[1] == ds]
             breakpoint()
 
             runs, names = [], []
