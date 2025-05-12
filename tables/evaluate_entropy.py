@@ -131,7 +131,6 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
                 subset = [f for f in files if formatted_ds_key in f]
             else:
                 subset = [f for f in files if f.split("_")[1] == ds]
-            breakpoint()
 
             runs, names = [], []
             for fn in sorted(subset):
