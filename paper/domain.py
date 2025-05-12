@@ -43,7 +43,8 @@ def read_score_docs(path):
 
     #  {qid: {docid: score}}
     for qdict in data.values():
-        docs.update(qdict.keys())
+        keys = [str(k) for k in qdict.keys()]
+        docs.update(keys)
 
     return docs
 
@@ -52,6 +53,7 @@ def read_run_docs(path, topk=None):
     if topk is not None:
         results = results.sort_values(["qid", "score"], ascending=[True, False]).groupby("qid").head(topk)
     unique_docs = set(results.docno.unique().tolist())
+    unique_docs = {str(d) for d in unique_docs}
 
     return unique_docs
 
