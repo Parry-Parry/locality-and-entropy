@@ -50,9 +50,11 @@ def parse_run_meta(fname):
         meta["domain"] = "Cross-Encoder"
     else:
         for tag, name in [
-            ("random", "Random"),
-            ("ensemble", "Ensemble"),
-            ("bm25", "BM25")
+            ("lower_quartile", "lower_quartile"),
+            ("upper_quartile", "upper_quartile"),
+            ("below_median", "below_median"),
+            ("above_median", "above_median"),
+            ("inner_quartiles", "inner_quartiles"),
         ]:
             if tag in base.lower():
                 meta["domain"] = name
