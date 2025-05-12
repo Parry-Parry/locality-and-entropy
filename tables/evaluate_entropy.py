@@ -116,7 +116,8 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
                 try:
                     pt_ds = pt.get_dataset(f"irds:beir/{ds_key}")
                 except Exception:
-                    pt_ds = pt.get_dataset(f"irds:{ds_key}")
+                    print(f"Error loading dataset {ds_key}: {e}")
+                    continue
             topics, qrels = pt_ds.get_topics("text"), pt_ds.get_qrels()
 
             # select only CAT quartile/median runs for this dataset
