@@ -121,15 +121,13 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
                     continue
             topics, qrels = pt_ds.get_topics("text"), pt_ds.get_qrels()
             metric_names = [str(m) for m in metrics]
-            breakpoint()
-            if "dl-" in ds_key:
+            if "dl_" in ds_key:
                 if '19' in ds_key:
                     formatted_ds_key = "dl_2019"
                 elif '20' in ds_key:
                     formatted_ds_key = "dl_2020"
                 
                 subset = [f for f in files if formatted_ds_key in f]
-                breakpoint()
             else:
                 subset = [f for f in files if f.split("_")[1] == ds]
 
