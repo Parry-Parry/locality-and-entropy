@@ -126,21 +126,27 @@ def generate_table(out_dir, alpha=0.10):
     # body rows
     for loss, subset in full_idx:
         cells = []
-        for g in GROUPS:
-            for m in METRICS:
-                v = table[g, m].loc[(loss, subset)]
-                comp = eq_map.get((g, loss, subset), "")
-                members = comp_members.get((g, loss, comp), set())
-                # superscript = codes of other splits in same comp
-                codes = [string.ascii_uppercase[SUBSET_ORDER.index(s)]
-                         for s in sorted(members) if s != subset]
-                sup = "".join(codes)
-                if pd.isna(v):
-                    cell = "–"
-                else:
-                    cell = f"{v:.2f}\\textsuperscript{{{sup}}}"
-                cells.append(cell)
-        latex.append(f"  {loss} & {subset.replace('_',' ')} " + " & ".join(cells) + r" \\")
+        for g, m in full_cols:
+            v = table[g, m].loc[(loss, subset)]
+            comp = eq_map.get((g, loss, subset), "")
+            members = comp_members.get((g, loss, comp), set())
+            # build and sort letter‐codes alphabetically
+            codes = sorted(
+                string.ascii_uppercase[SUBSET_ORDER.index(s)]
+                for s in members
+                if s != subset
+            )
+            sup = "".join(codes)
+            if pd.isna(v):
+                cell = "-"
+            else:
+                cell = f"{v:.2f}\\textsuperscript{{{sup}}}"
+            cells.append(cell)
+        latex.append(
+            f"  {loss} & {subset.replace('_', ' ')} "
+            + " & ".join(cells)
+            + r" \\"
+        )
     latex += [
         r"  \bottomrule",
         r"\end{tabular}",
@@ -153,6 +159,7 @@ def generate_table(out_dir, alpha=0.10):
     with open(path, "w") as f:
         f.write(output)
     print(f"Wrote {path}")
+
 
 if __name__ == "__main__":
     import argparse

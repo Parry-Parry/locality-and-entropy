@@ -9,8 +9,13 @@ import string
 LOSS_ORDER   = ["LCE", "RankNet", "marginMSE", "KL"]
 DOMAIN_ORDER = ["Random", "BM25", "Cross-Encoder", "Ensemble"]
 ARCH_ORDER   = ["BE", "CE"]
-METRICS      = ["nDCG", "MAP"]
 GROUPS       = ["dl19", "dl20", "beir"]
+# define which metrics to output per group
+GROUP_METRICS = {
+    "dl19": ["nDCG", "MAP"],
+    "dl20": ["nDCG", "MAP"],
+    "beir": ["nDCG"]            # drop MAP for BEIR
+}
 
 def annotate_equivalence(df_tost, alpha=0.10, metric="nDCG@10"):
     """
@@ -19,8 +24,7 @@ def annotate_equivalence(df_tost, alpha=0.10, metric="nDCG@10"):
     records = []
     for (group, loss, arch), sub in df_tost.groupby(["group", "loss", "arch"]):
         G = nx.Graph()
-        doms = DOMAIN_ORDER
-        G.add_nodes_from(doms)
+        G.add_nodes_from(DOMAIN_ORDER)
         for _, row in sub.iterrows():
             if (row["measure"] == metric
                 and row["p_lower"] > alpha
@@ -31,11 +35,11 @@ def annotate_equivalence(df_tost, alpha=0.10, metric="nDCG@10"):
             label = string.ascii_uppercase[idx]
             for d in comp:
                 records.append({
-                    "group":    group,
-                    "loss":     loss,
-                    "arch":     arch,
-                    "domain":   d,
-                    "comp":     label
+                    "group":  group,
+                    "loss":   loss,
+                    "arch":   arch,
+                    "domain": d,
+                    "comp":   label
                 })
     return pd.DataFrame.from_records(records)
 
@@ -81,7 +85,7 @@ def generate_table(out_dir, alpha=0.1):
         "nDCG@10":   "nDCG"
     })
 
-    # 6) pivot only values into (group,arch,metric)
+    # 6) pivot values into MultiIndex (group,arch,metric)
     table = df_all.pivot_table(
         index=["loss", "domain"],
         columns=["group", "arch", "metric"],
@@ -90,11 +94,17 @@ def generate_table(out_dir, alpha=0.1):
         dropna=False
     )
 
-    # 7) reindex to full grid with fixed order
-    full_idx  = pd.MultiIndex.from_product([LOSS_ORDER, DOMAIN_ORDER],
-                                           names=["loss", "domain"])
-    full_cols = pd.MultiIndex.from_product([GROUPS, ARCH_ORDER, METRICS],
-                                           names=["group", "arch", "metric"])
+    # 7) reindex to full grid, dropping BEIR-MAP
+    full_idx = pd.MultiIndex.from_product([LOSS_ORDER, DOMAIN_ORDER],
+                                          names=["loss", "domain"])
+    # build full_cols dynamically from GROUP_METRICS and ARCH_ORDER
+    col_tuples = []
+    for g in GROUPS:
+        for arch in ARCH_ORDER:
+            for m in GROUP_METRICS[g]:
+                col_tuples.append((g, arch, m))
+    full_cols = pd.MultiIndex.from_tuples(col_tuples, names=["group", "arch", "metric"])
+
     table = table.reindex(index=full_idx, columns=full_cols)
 
     # 8) build comp membership maps
@@ -105,32 +115,35 @@ def generate_table(out_dir, alpha=0.1):
             comp_members[(g, loss, arch, comp_label)] = set(grp.domain)
 
     # 9) assemble LaTeX
-    latex = [
+    # header group spans
+    header = [
         r"\begin{table}[t]",
         r"  \centering",
         r"  \footnotesize",
         r"  \setlength{\tabcolsep}{3pt}",
-        r"  \begin{tabular}{ll" + "cccc"*len(GROUPS) + "}",
+        r"  \begin{tabular}{ll" + "c" * len(col_tuples) + "}",
         r"  \toprule"
     ]
 
-    # header superscripts for BM25 (BE) & Cross-Encoder (CE)
+    # header rows
+    # 9a) top-level group labels with their superscripts from BM25 (BE) & Cross-Encoder (CE)
     sp = []
     for g in GROUPS:
         sub = df_eq_all[df_eq_all.group == g]
-        be_cl = sub[(sub.arch=="BE")    & (sub.domain=="BM25")]["comp"]
-        ce_cl = sub[(sub.arch=="CE")    & (sub.domain=="Cross-Encoder")]["comp"]
-        be_sup = be_cl.iloc[0] if not be_cl.empty else ""
-        ce_sup = ce_cl.iloc[0] if not ce_cl.empty else ""
-        sp.append(f"{be_sup},{ce_sup}" if ce_sup else be_sup)
+        be_sup = sub[(sub.arch=="BE") & (sub.domain=="BM25")]["comp"].iloc[0:1].reindex().tolist()[0] if not sub[(sub.arch=="BE") & (sub.domain=="BM25")].empty else ""
+        ce_sup = sub[(sub.arch=="CE") & (sub.domain=="Cross-Encoder")]["comp"].iloc[0:1].reindex().tolist()[0] if not sub[(sub.arch=="CE") & (sub.domain=="Cross-Encoder")].empty else ""
+        # combine and drop empty
+        parts = [x for x in (be_sup, ce_sup) if x]
+        sp.append(",".join(parts))
 
-    latex.append(
+    header.append(
         rf"    &  & "
-        rf"\multicolumn{{4}}{{c}}{{TREC DL'19\textsuperscript{{{sp[0]}}}}} "
-        rf"& \multicolumn{{4}}{{c}}{{TREC DL'20\textsuperscript{{{sp[1]}}}}} "
-        rf"& \multicolumn{{4}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\"
+        rf"\multicolumn{{{len(col_tuples[:len(col_tuples)//3])}}}{{c}}{{TREC DL'19\textsuperscript{{{sp[0]}}}}} "
+        rf"& \multicolumn{{{len(col_tuples[len(col_tuples)//3:2*len(col_tuples)//3])}}}{{c}}{{TREC DL'20\textsuperscript{{{sp[1]}}}}} "
+        rf"& \multicolumn{{{len(col_tuples[2*len(col_tuples)//3:])}}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\"
     )
-    latex += [
+
+    header += [
         r"  \cmidrule(lr){3-6}\cmidrule(lr){7-10}\cmidrule(lr){11-14}",
         r"    &  & "
         r"\multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} "
@@ -138,42 +151,44 @@ def generate_table(out_dir, alpha=0.1):
         r"& \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} \\",
         r"  \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}"
         r"\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}",
-        r"    Loss & Domain & nDCG & MAP & nDCG & MAP & nDCG & MAP & "
-        r"nDCG & MAP & nDCG & MAP & nDCG & MAP \\",
+        r"    Loss & Domain & " 
+        + " & ".join(f"{arch} {m}" for _, arch, m in full_cols) 
+        + r" \\",
         r"  \midrule"
     ]
 
-    # body rows in fixed order
-    for loss in LOSS_ORDER:
-        for dom in DOMAIN_ORDER:
-            cells = []
-            for g in GROUPS:
-                for arch in ARCH_ORDER:
-                    for m in METRICS:
-                        v = table[g, arch, m].loc[(loss, dom)]
-                        comp_label = eq_map.get((g, loss, arch, dom), "")
-                        # list other domains in same comp
-                        members = comp_members.get((g, loss, arch, comp_label), set())
-                        other_codes = sorted(
-                            d for d in members if d != dom
-                        )
-                        # map domain names to single‐letter codes in fixed domain order
-                        code_map = {d: string.ascii_uppercase[i] for i, d in enumerate(DOMAIN_ORDER)}
-                        sup = "".join(code_map[d] for d in other_codes)
-                        if pd.isna(v):
-                            cell = "–"
-                        else:
-                            cell = f"{v:.2f}\\textsuperscript{{{sup}}}"
-                        cells.append(cell)
-            latex.append(f"  {loss} & {dom} & " + " & ".join(cells) + r" \\")
+    # 9b) body rows with sorted superscripts
+    for loss, dom in full_idx:
+        cells = []
+        for g, arch, m in full_cols:
+            v = table[g, arch, m].loc[(loss, dom)]
+            comp_label = eq_map.get((g, loss, arch, dom), "")
+            members = comp_members.get((g, loss, arch, comp_label), set())
+            # build sorted letter codes
+            codes = sorted(
+                string.ascii_uppercase[DOMAIN_ORDER.index(d)]
+                for d in members
+                if d != dom
+            )
+            sup = "".join(codes)
+            if pd.isna(v):
+                cells.append("–")
+            else:
+                cells.append(f"{v:.2f}\\textsuperscript{{{sup}}}")
+        header.append(f"  {loss} & {dom} & " + " & ".join(cells) + r" \\")
 
-    latex += [r"  \bottomrule", r"\end{tabular}", r"\end{table}"]
+    # footer
+    header += [
+        r"  \bottomrule",
+        r"\end{tabular}",
+        r"\end{table}"
+    ]
 
-    # write to file
-    output = "\n".join(latex)
-    with open(os.path.join(out_dir, "table.tex"), "w") as f:
-        f.write(output)
-    print(f"Wrote table.tex to {out_dir}")
+    # write out
+    out_path = os.path.join(out_dir, "table.tex")
+    with open(out_path, "w") as f:
+        f.write("\n".join(header))
+    print(f"Wrote {out_path}")
 
 
 if __name__ == "__main__":
