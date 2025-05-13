@@ -79,7 +79,7 @@ def generate_table(out_dir, alpha=0.10):
 
     # 5) normalize metric labels
     df_all["metric"] = df_all["measure"].map({
-        "AP": "MAP",
+        "AP(rel=2)": "MAP",
         "nDCG@10":   "nDCG"
     })
 
