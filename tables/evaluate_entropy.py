@@ -78,9 +78,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
         "inner_quartiles",
         "outlier_quartiles"
     }
-    breakpoint()
     files = [f for f in files if any(s in f for s in ALLOWED)]
-    breakpoint()
     # discover datasets from BEIR files
     beir_files = [f for f in files if "beir" in f]
     dataset_ids = sorted({f.split("_")[1] for f in beir_files})
@@ -123,7 +121,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
                     continue
             topics, qrels = pt_ds.get_topics("text"), pt_ds.get_qrels()
             metric_names = [str(m) for m in metrics]
-
+            breakpoint()
             if "dl-" in ds_key:
                 if '19' in ds_key:
                     formatted_ds_key = "dl_2019"
@@ -131,6 +129,7 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
                     formatted_ds_key = "dl_2020"
                 
                 subset = [f for f in files if formatted_ds_key in f]
+                breakpoint()
             else:
                 subset = [f for f in files if f.split("_")[1] == ds]
 
