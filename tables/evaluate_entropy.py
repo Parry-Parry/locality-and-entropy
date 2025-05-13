@@ -88,9 +88,6 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
         "beir": [ds for ds in dataset_ids if ds not in {"dl_2019", "dl_2020"}],
     }
 
-    metrics = [AP(rel=rel), NDCG(cutoff=10)]
-    metric_names = [str(m) for m in metrics]
-
     for group_name, ds_list in groups.items():
         all_per = []
         # for each dataset in group
@@ -119,8 +116,9 @@ def main(run_dir: str, out_dir: str, rel: int = 1):
                 except Exception as e:
                     print(f"Error loading dataset {ds_key}: {e}")
                     continue
-            topics, qrels = pt_ds.get_topics("text"), pt_ds.get_qrels()
+            metrics = [AP(rel=rel), NDCG(cutoff=10)]
             metric_names = [str(m) for m in metrics]
+            topics, qrels = pt_ds.get_topics("text"), pt_ds.get_qrels()
             if "dl_" in ds_key:
                 if '19' in ds_key:
                     formatted_ds_key = "dl_2019"
