@@ -122,7 +122,7 @@ def generate_table(out_dir, alpha=0.10):
         "    Loss & Domain "
         + " ".join(
             f"& \\multicolumn{{{sp}}}{{c}}{{{hdr}}}"
-            for sp, hdr in zip(spans, ["TREC DL'19", "TREC DL'20", "BEIR mean"])
+            for sp, hdr in zip(spans, ["TREC DL'19", "TREC DL'20", "BEIR"])
         )
         + r" \\",
         "  \\cmidrule(lr){3-" + str(2 + spans[0]) + "}"
@@ -143,19 +143,19 @@ def generate_table(out_dir, alpha=0.10):
             members = comp_members.get((g, loss, arch, comp_label), set())
             # build sorted codes
             codes = sorted(
-                string.ascii_uppercase[DOMAIN_ORDER.index(d)]
+                string.ascii_lowercase[DOMAIN_ORDER.index(d)]
                 for d in members
                 if d != dom
             )
             sup_codes = "".join(codes)
             # pad to length max_sup_len with phantom 'A's
             missing = max_sup_len - len(sup_codes)
-            phantom_arg = "A" * missing
+            phantom_arg = "a" * missing
             sup_text = f"{sup_codes}\\phantom{{{phantom_arg}}}"
 
             if pd.isna(val):
                 # hyphen plus phantom superscript
-                cells.append(f"–\\textsuperscript{{\\phantom{{{'A'*max_sup_len}}}}}")
+                cells.append(f"–\\textsuperscript{{\\phantom{{{'a'*max_sup_len}}}}}")
             else:
                 cells.append(f"{val:.2f}\\textsuperscript{{{sup_text}}}")
 
