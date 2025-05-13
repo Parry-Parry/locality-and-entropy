@@ -7,7 +7,7 @@ import string
 
 # fixed orders
 LOSS_ORDER    = ["LCE", "marginMSE"]
-SUBSET_ORDER  = ["lower_quartile", "below_median", "inner_quartiles", "above_median", "upper_quartile"]
+SUBSET_ORDER  = ["lower_quartile", "below_median", "inner_quartiles", "above_median", "upper_quartile", "outlier_quartiles"]
 METRICS       = ["nDCG", "MAP"]
 GROUPS        = ["dl19", "dl20", "beir"]
 ALLOWED_SPLITS = set(SUBSET_ORDER)
