@@ -13,7 +13,7 @@ if not pt.started():
     pt.init()
 
 
-def tost(x, y, bound_pct=0.5):
+def tost(x, y, bound_pct=0.1):
     """
     Two‐one‐sided t‐test with margin = ±bound_pct% of observed mean difference.
     Returns (p_overall, p_low, p_high).
