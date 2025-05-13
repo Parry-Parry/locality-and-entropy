@@ -2,7 +2,6 @@
 import os
 import pandas as pd
 import networkx as nx
-import numpy as np
 import string
 
 # fixed orders
@@ -10,11 +9,11 @@ LOSS_ORDER   = ["LCE", "RankNet", "marginMSE", "KL"]
 DOMAIN_ORDER = ["Random", "BM25", "Cross-Encoder", "Ensemble"]
 ARCH_ORDER   = ["BE", "CE"]
 GROUPS       = ["dl19", "dl20", "beir"]
-# define which metrics to output per group
+# only nDCG+MAP for dl19/20, but nDCG only for BEIR
 GROUP_METRICS = {
     "dl19": ["nDCG", "MAP"],
     "dl20": ["nDCG", "MAP"],
-    "beir": ["nDCG"]            # drop MAP for BEIR
+    "beir": ["nDCG"]
 }
 
 def annotate_equivalence(df_tost, alpha=0.10, metric="nDCG@10"):
@@ -27,8 +26,8 @@ def annotate_equivalence(df_tost, alpha=0.10, metric="nDCG@10"):
         G.add_nodes_from(DOMAIN_ORDER)
         for _, row in sub.iterrows():
             if (row["measure"] == metric
-                and row["p_lower"] > alpha
-                and row["p_upper"] > alpha):
+                    and row["p_lower"] > alpha
+                    and row["p_upper"] > alpha):
                 G.add_edge(row["domain1"], row["domain2"])
         comps = sorted(nx.connected_components(G), key=lambda c: sorted(c)[0])
         for idx, comp in enumerate(comps):
@@ -44,7 +43,7 @@ def annotate_equivalence(df_tost, alpha=0.10, metric="nDCG@10"):
     return pd.DataFrame.from_records(records)
 
 
-def generate_table(out_dir, alpha=0.1):
+def generate_table(out_dir, alpha=0.10):
     # 1) load means and tost tables
     means = {
         g: pd.read_csv(os.path.join(out_dir, f"means_{g}.tsv"), sep="\t")
@@ -63,7 +62,7 @@ def generate_table(out_dir, alpha=0.1):
         eq_frames.append(df_eq)
     df_eq_all = pd.concat(eq_frames, ignore_index=True)
 
-    # 3) merge eq into means
+    # 3) merge eq labels into means
     merged = []
     for g in GROUPS:
         df = means[g].copy()
@@ -76,16 +75,16 @@ def generate_table(out_dir, alpha=0.1):
         merged.append(df)
     df_all = pd.concat(merged, ignore_index=True)
 
-    # 4) drop CE-Teacher baseline
+    # 4) drop CE-Teacher baseline if present
     df_all = df_all[df_all.arch != "CE-Teacher"]
 
-    # 5) normalize metric labels
+    # 5) normalize metric names
     df_all["metric"] = df_all["measure"].map({
-        "AP(rel=2)": "MAP",
-        "nDCG@10":   "nDCG"
+        "nDCG@10":   "nDCG",
+        "AP(rel=2)": "MAP"
     })
 
-    # 6) pivot values into MultiIndex (group,arch,metric)
+    # 6) pivot into a table
     table = df_all.pivot_table(
         index=["loss", "domain"],
         columns=["group", "arch", "metric"],
@@ -95,99 +94,95 @@ def generate_table(out_dir, alpha=0.1):
     )
 
     # 7) reindex to full grid, dropping BEIR-MAP
-    full_idx = pd.MultiIndex.from_product([LOSS_ORDER, DOMAIN_ORDER],
-                                          names=["loss", "domain"])
-    # build full_cols dynamically from GROUP_METRICS and ARCH_ORDER
-    col_tuples = []
-    for g in GROUPS:
-        for arch in ARCH_ORDER:
-            for m in GROUP_METRICS[g]:
-                col_tuples.append((g, arch, m))
-    full_cols = pd.MultiIndex.from_tuples(col_tuples, names=["group", "arch", "metric"])
-
+    full_idx = pd.MultiIndex.from_product(
+        [LOSS_ORDER, DOMAIN_ORDER],
+        names=["loss", "domain"]
+    )
+    col_tuples = [
+        (g, arch, m)
+        for g in GROUPS
+        for arch in ARCH_ORDER
+        for m in GROUP_METRICS[g]
+    ]
+    full_cols = pd.MultiIndex.from_tuples(
+        col_tuples,
+        names=["group", "arch", "metric"]
+    )
     table = table.reindex(index=full_idx, columns=full_cols)
 
-    # 8) build comp membership maps
-    eq_map = df_eq_all.set_index(["group", "loss", "arch", "domain"])["comp"].to_dict()
+    # 8) build lookup maps for superscripts
+    eq_map = df_eq_all.set_index(
+        ["group", "loss", "arch", "domain"]
+    )["comp"].to_dict()
+
     comp_members = {}
-    for (g, loss, arch), sub in df_eq_all.groupby(["group","loss","arch"]):
+    for (g, loss, arch), sub in df_eq_all.groupby(["group", "loss", "arch"]):
         for comp_label, grp in sub.groupby("comp"):
             comp_members[(g, loss, arch, comp_label)] = set(grp.domain)
 
     # 9) assemble LaTeX
-    # header group spans
-    header = [
+    # 9a) compute how many columns per group
+    spans = [len(ARCH_ORDER) * len(GROUP_METRICS[g]) for g in GROUPS]
+
+    latex = [
         r"\begin{table}[t]",
         r"  \centering",
         r"  \footnotesize",
         r"  \setlength{\tabcolsep}{3pt}",
-        r"  \begin{tabular}{ll" + "c" * len(col_tuples) + "}",
-        r"  \toprule"
-    ]
-
-    # header rows
-    # 9a) top-level group labels with their superscripts from BM25 (BE) & Cross-Encoder (CE)
-    sp = []
-    for g in GROUPS:
-        sub = df_eq_all[df_eq_all.group == g]
-        be_sup = sub[(sub.arch=="BE") & (sub.domain=="BM25")]["comp"].iloc[0:1].reindex().tolist()[0] if not sub[(sub.arch=="BE") & (sub.domain=="BM25")].empty else ""
-        ce_sup = sub[(sub.arch=="CE") & (sub.domain=="Cross-Encoder")]["comp"].iloc[0:1].reindex().tolist()[0] if not sub[(sub.arch=="CE") & (sub.domain=="Cross-Encoder")].empty else ""
-        # combine and drop empty
-        parts = [x for x in (be_sup, ce_sup) if x]
-        sp.append(",".join(parts))
-
-    header.append(
-        rf"    &  & "
-        rf"\multicolumn{{{len(col_tuples[:len(col_tuples)//3])}}}{{c}}{{TREC DL'19\textsuperscript{{{sp[0]}}}}} "
-        rf"& \multicolumn{{{len(col_tuples[len(col_tuples)//3:2*len(col_tuples)//3])}}}{{c}}{{TREC DL'20\textsuperscript{{{sp[1]}}}}} "
-        rf"& \multicolumn{{{len(col_tuples[2*len(col_tuples)//3:])}}}{{c}}{{BEIR mean\textsuperscript{{{sp[2]}}}}} \\"
-    )
-
-    header += [
-        r"  \cmidrule(lr){3-6}\cmidrule(lr){7-10}\cmidrule(lr){11-14}",
-        r"    &  & "
-        r"\multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} "
-        r"& \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} "
-        r"& \multicolumn{2}{c}{BE} & \multicolumn{2}{c}{CE} \\",
-        r"  \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}"
-        r"\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}",
-        r"    Loss & Domain & " 
-        + " & ".join(f"{arch} {m}" for _, arch, m in full_cols) 
+        # top‐level group spans
+        r"  \begin{tabular}{ll" + "c" * sum(spans) + "}",
+        r"  \toprule",
+        # Loss & Domain & group headers
+        "    Loss & Domain "
+        + " ".join(
+            f"& \\multicolumn{{{sp}}}{{c}}{{{hdr}}}"
+            for sp, hdr in zip(spans, ["TREC DL'19", "TREC DL'20", "BEIR mean"])
+        )
+        + r" \\",
+        # cmidrules
+        "  \\cmidrule(lr){3-" + str(2 + spans[0]) + "}"
+        + "\\cmidrule(lr){" + str(3 + spans[0]) + "-" + str(2 + spans[0] + spans[1]) + "}"
+        + "\\cmidrule(lr){" + str(3 + spans[0] + spans[1]) + "-" + str(2 + sum(spans)) + "}",
+        # second header: per‐arch metrics
+        "    &  "
+        + " & ".join(f"{arch} {m}" for _, arch, m in full_cols)
         + r" \\",
         r"  \midrule"
     ]
 
-    # 9b) body rows with sorted superscripts
+    # 9b) body rows
     for loss, dom in full_idx:
         cells = []
         for g, arch, m in full_cols:
-            v = table[g, arch, m].loc[(loss, dom)]
+            val = table.loc[(loss, dom), (g, arch, m)]
             comp_label = eq_map.get((g, loss, arch, dom), "")
             members = comp_members.get((g, loss, arch, comp_label), set())
-            # build sorted letter codes
+            # map other domains → single letters and sort
             codes = sorted(
                 string.ascii_uppercase[DOMAIN_ORDER.index(d)]
                 for d in members
                 if d != dom
             )
             sup = "".join(codes)
-            if pd.isna(v):
+            if pd.isna(val):
                 cells.append("–")
             else:
-                cells.append(f"{v:.2f}\\textsuperscript{{{sup}}}")
-        header.append(f"  {loss} & {dom} & " + " & ".join(cells) + r" \\")
+                cells.append(f"{val:.2f}\\textsuperscript{{{sup}}}")
+        latex.append(
+            f"  {loss} & {dom} & " + " & ".join(cells) + r" \\"
+        )
 
     # footer
-    header += [
+    latex += [
         r"  \bottomrule",
-        r"\end{tabular}",
+        r"  \end{tabular}",
         r"\end{table}"
     ]
 
     # write out
     out_path = os.path.join(out_dir, "table.tex")
     with open(out_path, "w") as f:
-        f.write("\n".join(header))
+        f.write("\n".join(latex))
     print(f"Wrote {out_path}")
 
 
