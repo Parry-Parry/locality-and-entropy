@@ -12,7 +12,7 @@ if not pt.started():
 
 import numpy as np
 
-def tost(x, y, bound_pct=0.5):
+def tost(x, y, bound_pct=0.1):
     """
     Perform two one-sided t-tests (TOST) for equivalence, with bounds set
     to ±bound_pct% of the observed difference in sample means.
