@@ -114,13 +114,13 @@ class TrainingDataset(Dataset):
         # Retrieve the line corresponding to idx
         item = self._get_line_by_index(idx)
 
-        _, _, _, doc_id_a_text, _, doc_id_b_text = self._get(
+        _, query_id, _, doc_id_a_text, _, doc_id_b_text = self._get(
             item
         )
 
         if len(doc_id_b_text) > (self.n_neg):
             doc_id_b_text = random.sample(doc_id_b_text, self.n_neg)
-        return ("", doc_id_a_text + doc_id_b_text)
+        return (query_id, doc_id_a_text + doc_id_b_text)
 
 
 class TrainingCollator(object):
@@ -128,9 +128,10 @@ class TrainingCollator(object):
         self.tokenizer = tokenizer
 
     def __call__(self, batch) -> dict:
-        doc_embedding, label = [], [], []
+        qidx, doc_embedding, label = [], [], []
 
-        for _, d, *l in batch:
+        for q, d, *l in batch:
+            qidx.append(q)
             doc_embedding.extend(d)
             if l:
                 label.extend(l[0])
@@ -138,6 +139,7 @@ class TrainingCollator(object):
         doc_embedding = np.array(doc_embedding)
         label = torch.tensor(np.array(label)) if label else None
         return {
+            "query_id": qidx,
             "docs_batch": doc_embedding,
             "labels": label,
         }
@@ -162,14 +164,12 @@ def main():
     )
     TOTAL_DOCS = 12000000
     N_QUERIES = TOTAL_DOCS / 16
-
-    bert = AutoModel.from_pretrained("bert-base-uncased").cuda()
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     output = {}
     for data in tqdm(TRAIN_JSONL, desc="Processing All"):
         name = data.split("/")[-1].split(".")[0]
         dataset = TrainingDataset(
             data,
+            FlexIndex("data/doc_embeddings"),
             group_size=16,
             corpus="msmarco-passage/train/triples-small",
             no_positive=False,
@@ -181,22 +181,25 @@ def main():
             dataset,
             batch_size=16,
             shuffle=False,
-            collate_fn=TrainingCollator(tokenizer),
+            collate_fn=TrainingCollator(None),
         )
-        deltas = []
+        deltas, qids = [], []
         for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches"):
             docs = batch["docs_batch"]
+            qids = batch["query_id"]
             deltas.append(
                 robust_diameter(
                     docs,
                     alpha=0.99,
                 )
             )
+        
+        diameters = {qid: delta for qid, delta in zip(qids, deltas)}
 
         overall_diameter = np.quantile(deltas, 0.99)
         output[name] = {
             "diameter": overall_diameter,
-            "diameters": deltas,
+            "diameters": diameters,
             "num_queries": N_QUERIES,
             "num_docs": TOTAL_DOCS,
         }
