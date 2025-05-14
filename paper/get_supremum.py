@@ -146,12 +146,12 @@ class TrainingCollator(object):
 
 
 # Training / score file pairs  (extend or modify as needed)
-TRAIN_JSONL=(
-  "data/bm25.16.jsonl"
-  "data/crossencoder.16.jsonl"
-  "data/random.16.jsonl"
-  "data/ensemble.16.jsonl"
-)
+TRAIN_JSONL=[
+  "data/bm25.16.jsonl",
+  "data/crossencoder.16.jsonl",
+  "data/random.16.jsonl",
+  "data/ensemble.16.jsonl",
+]
 
 
 def main():
