@@ -73,7 +73,8 @@ def main():
             collate_fn=DotDataCollator(tokenizer),
         )
         deltas = []
-        for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches"):
+        total_steps = len(dataloader)
+        for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches", total=total_steps):
             docs = batch["docs_batch"]
             # Move the tensors to GPU
             docs = {k: v.cuda() for k, v in docs.items()}
