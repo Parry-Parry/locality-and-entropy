@@ -1,66 +1,144 @@
 #!/usr/bin/env python3
+"""Generate LaTeX table of effectiveness for CAT experiments.
+
+The table reports nDCG and MAP for the two TREC DL test collections
+(DL'19, DL'20) and nDCG only for the BEIR benchmark.
+
+Statistical equivalence across sampling subsets is annotated using the
+TOST procedure (α = 0.10). Subsets that are not statistically different
+share the same superscript letter.
+
+Input files
+-----------
+For each evaluation group *g* ∈ {dl19, dl20, beir} located in *out_dir*:
+
+* means_cat_<g>.tsv – Mean effectiveness per (loss, subset, measure) triple.
+* tost_cat_<g>.tsv  – TOST p‑values per (loss, subset1, subset2, measure) triple.
+
+Both files are assumed to be produced by `cat_eval.py` in the same project.
+
+Output
+------
+`table_cat.tex` – Formatted LaTeX table stored in *out_dir*.
+
+Example
+-------
+$ ./generate_table.py --out_dir runs/2025‑05‑14
+"""
+
+from __future__ import annotations
+
+import argparse
 import os
-import pandas as pd
-import networkx as nx
-import numpy as np
 import string
+from typing import Dict, List, Set, Tuple
 
-# fixed orders
-LOSS_ORDER    = ["LCE", "marginMSE"]
-SUBSET_ORDER  = ["lower_quartile", "below_median", "inner_quartiles", "above_median", "upper_quartile", "outlier_quartiles"]
-METRICS       = ["nDCG", "MAP"]
-GROUPS        = ["dl19", "dl20", "beir"]
-ALLOWED_SPLITS = set(SUBSET_ORDER)
+import networkx as nx
+import pandas as pd
 
-def annotate_equivalence(df_tost, alpha=0.10, metric="nDCG@10"):
+# ----------------------------------------------------------------------
+# Immutable configuration
+# ----------------------------------------------------------------------
+
+LOSS_ORDER: List[str] = ["LCE", "marginMSE"]
+
+SUBSET_ORDER: List[str] = [
+    "lower_quartile",
+    "below_median",
+    "inner_quartiles",
+    "above_median",
+    "upper_quartile",
+    "outlier_quartiles",
+]
+
+GROUPS: List[str] = ["dl19", "dl20", "beir"]
+
+#: Metrics to *display* per evaluation group
+GROUP_METRICS: Dict[str, Tuple[str, ...]] = {
+    "dl19": ("nDCG", "MAP"),
+    "dl20": ("nDCG", "MAP"),
+    "beir": ("nDCG",),
+}
+
+ALLOWED_SPLITS: Set[str] = set(SUBSET_ORDER)
+
+# ----------------------------------------------------------------------
+
+def annotate_equivalence(
+    df_tost: pd.DataFrame, *, alpha: float = 0.10, metric: str = "nDCG@10"
+) -> pd.DataFrame:
+    """Label statistically equivalent sampling subsets using TOST.
+
+    Parameters
+    ----------
+    df_tost : pd.DataFrame
+        Long‑form TOST results containing the columns
+        [`group`, `loss`, `subset1`, `subset2`, `measure`, `p_lower`, `p_upper`].
+    alpha : float, optional
+        Significance level for the equivalence test, by default ``0.10``.
+    metric : str, optional
+        Measure to consider when building the equivalence graph,
+        by default ``"nDCG@10"``.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns [`group`, `loss`, `subset`, `comp`].
     """
-    For each (group, loss), builds an equivalence graph over SUBSET_ORDER
-    where edges connect splits whose TOST p_lower>alpha & p_upper>alpha.
-    Labels each connected component A, B, C… and returns a DataFrame of
-    (group, loss, subset, comp_label).
-    """
-    records = []
+    records: List[dict] = []
+
     for (group, loss), sub in df_tost.groupby(["group", "loss"]):
-        G = nx.Graph()
-        G.add_nodes_from(SUBSET_ORDER)
-        for _, row in sub.iterrows():
-            if (row["measure"] == metric
-                and row["p_lower"] > alpha
-                and row["p_upper"] > alpha):
-                G.add_edge(row["subset1"], row["subset2"])
-        comps = sorted(nx.connected_components(G), key=lambda c: sorted(c)[0])
-        for idx, comp in enumerate(comps):
+        graph = nx.Graph()
+        graph.add_nodes_from(SUBSET_ORDER)
+
+        mask = (
+            (sub["measure"] == metric)
+            & (sub["p_lower"] > alpha)
+            & (sub["p_upper"] > alpha)
+        )
+        for _, row in sub[mask].iterrows():
+            graph.add_edge(row["subset1"], row["subset2"])
+
+        components = sorted(graph.connected_components(), key=lambda c: sorted(c)[0])
+        for idx, component in enumerate(components):
             label = string.ascii_uppercase[idx]
-            for s in comp:
+            for s in component:
                 records.append({
-                    "group":   group,
-                    "loss":    loss,
-                    "subset":  s,
-                    "comp":    label
+                    "group": group,
+                    "loss": loss,
+                    "subset": s,
+                    "comp": label,
                 })
+
     return pd.DataFrame.from_records(records)
 
 
-def generate_table(out_dir, alpha=0.10):
-    # 1) load long‐form means and tost tables for CAT
-    means = {
+# ----------------------------------------------------------------------
+
+def generate_table(out_dir: str, *, alpha: float = 0.10) -> None:
+    """Generate LaTeX table and save it to *out_dir*."""
+
+    # ------------------------------------------------------------------
+    # 1) Load means and TOST results
+    # ------------------------------------------------------------------
+    means: Dict[str, pd.DataFrame] = {
         g: pd.read_csv(os.path.join(out_dir, f"means_cat_{g}.tsv"), sep="\t")
         for g in GROUPS
     }
-    tosts = {
+    tosts: Dict[str, pd.DataFrame] = {
         g: pd.read_csv(os.path.join(out_dir, f"tost_cat_{g}.tsv"), sep="\t")
         for g in GROUPS
     }
 
-    # 2) annotate equivalences across splits
-    eq_frames = []
-    for g in GROUPS:
-        df_eq = annotate_equivalence(tosts[g], alpha=alpha)
-        df_eq["group"] = g
-        eq_frames.append(df_eq)
+    # ------------------------------------------------------------------
+    # 2) Annotate equivalence classes
+    # ------------------------------------------------------------------
+    eq_frames = [annotate_equivalence(tosts[g], alpha=alpha) for g in GROUPS]
     df_eq_all = pd.concat(eq_frames, ignore_index=True)
 
-    # 3) merge comp labels into means
+    # ------------------------------------------------------------------
+    # 3) Merge equivalence labels into the means
+    # ------------------------------------------------------------------
     merged = []
     for g in GROUPS:
         df = means[g].copy()
@@ -69,101 +147,134 @@ def generate_table(out_dir, alpha=0.10):
         df = df.merge(
             df_eq_all[df_eq_all.group == g],
             on=["group", "loss", "subset"],
-            how="left"
+            how="left",
         )
         merged.append(df)
+
     df_all = pd.concat(merged, ignore_index=True)
 
-    # 4) keep only the two losses we care about
+    # Keep only losses of interest
     df_all = df_all[df_all.loss.isin(LOSS_ORDER)]
 
-    # 5) normalize metric labels
+    # Normalise metric labels
     df_all["metric"] = df_all["measure"].map({
         "AP(rel=2)": "MAP",
-        "nDCG@10":   "nDCG"
+        "nDCG@10": "nDCG",
     })
 
-    # 6) pivot values into MultiIndex (group, metric)
+    # ------------------------------------------------------------------
+    # 4) Pivot: index = (loss, subset) ; columns = (group, metric)
+    # ------------------------------------------------------------------
     table = df_all.pivot_table(
         index=["loss", "subset"],
         columns=["group", "metric"],
         values="value",
         aggfunc="mean",
-        dropna=False
+        dropna=False,
     )
 
-    # 7) reindex to full grid
-    full_idx  = pd.MultiIndex.from_product(
-        [LOSS_ORDER, SUBSET_ORDER],
-        names=["loss", "subset"]
+    # ------------------------------------------------------------------
+    # 5) Re‑index to dense grid and drop unwanted metric columns
+    # ------------------------------------------------------------------
+    full_idx = pd.MultiIndex.from_product(
+        [LOSS_ORDER, SUBSET_ORDER], names=["loss", "subset"]
     )
-    full_cols = pd.MultiIndex.from_product(
-        [GROUPS, METRICS],
-        names=["group", "metric"]
+
+    full_cols = pd.MultiIndex.from_tuples(
+        [(g, m) for g in GROUPS for m in GROUP_METRICS[g]],
+        names=["group", "metric"],
     )
+
     table = table.reindex(index=full_idx, columns=full_cols)
 
-    # 8) build comp‐lookup for superscripts
+    # ------------------------------------------------------------------
+    # 6) Maps for superscript annotation
+    # ------------------------------------------------------------------
     eq_map = df_eq_all.set_index(["group", "loss", "subset"])["comp"].to_dict()
-    comp_members = {
-        (row.group, row.loss, row.comp): 
-          set(df_eq_all.query("group==@row.group and loss==@row.loss and comp==@row.comp")["subset"])
+
+    comp_members: Dict[Tuple[str, str, str], Set[str]] = {
+        (row.group, row.loss, row.comp): set(
+            df_eq_all.query(
+                "group == @row.group and loss == @row.loss and comp == @row.comp"
+            )["subset"]
+        )
         for row in df_eq_all.itertuples()
     }
 
-    # 9) assemble LaTeX
-    latex = [
+    # ------------------------------------------------------------------
+    # 7) Assemble LaTeX lines
+    # ------------------------------------------------------------------
+    n_value_cols = len(full_cols)
+    col_spec = "ll" + "c" * n_value_cols
+
+    latex: List[str] = [
         r"\begin{table}[t]",
         r"  \centering",
         r"  \footnotesize",
         r"  \setlength{\tabcolsep}{3pt}",
-        r"  \begin{tabular}{ll" + "cc"*len(GROUPS) + "}",
+        rf"  \begin{{tabular}}{{{col_spec}}}",
         r"  \toprule",
-        r"    Loss & Split  " + " & ".join(f"& {g} nDCG & {g} MAP" for g in GROUPS) + r" \\",
-        r"  \midrule"
     ]
 
-    # body rows
+    # Header row
+    header_cells: List[str] = []
+    for g in GROUPS:
+        header_cells.append(f"& {g} nDCG")
+        if "MAP" in GROUP_METRICS[g]:
+            header_cells.append(f"& {g} MAP")
+    latex.append("    Loss & Split  " + " ".join(header_cells) + r" \\")
+    latex.append(r"  \midrule")
+
+    # Body rows
     for loss, subset in full_idx:
-        cells = []
+        cells: List[str] = []
         for g, m in full_cols:
-            v = table[g, m].loc[(loss, subset)]
+            value = table.at[(loss, subset), (g, m)]
             comp = eq_map.get((g, loss, subset), "")
             members = comp_members.get((g, loss, comp), set())
-            # build and sort letter‐codes alphabetically
-            codes = sorted(
-                string.ascii_uppercase[SUBSET_ORDER.index(s)]
-                for s in members
-                if s != subset
+
+            superscript = "".join(
+                sorted(
+                    string.ascii_uppercase[SUBSET_ORDER.index(s)]
+                    for s in members
+                    if s != subset
+                )
             )
-            sup = "".join(codes)
-            if pd.isna(v):
+
+            if pd.isna(value):
                 cell = "-"
             else:
-                cell = f"{v:.2f}\\textsuperscript{{{sup}}}"
+                cell = f"{value:.2f}"
+                if superscript:
+                    cell += rf"\textsuperscript{{{superscript}}}"
             cells.append(cell)
+
         latex.append(
-            f"  {loss} & {subset.replace('_', ' ')} "
-            + " & ".join(cells)
-            + r" \\"
-        )
+            f"  {loss} & {subset.replace('_', ' ')} " + " & ".join(cells) + r" \\")
+
     latex += [
         r"  \bottomrule",
         r"\end{tabular}",
-        r"\end{table}"
+        r"\end{table}",
+        "",
     ]
 
-    # write out
-    output = "\n".join(latex)
-    path = os.path.join(out_dir, "table_cat.tex")
-    with open(path, "w") as f:
-        f.write(output)
-    print(f"Wrote {path}")
+    output_path = os.path.join(out_dir, "table_cat.tex")
+    with open(output_path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(latex))
+
+    print(f"Wrote {output_path}")
+
+
+# ----------------------------------------------------------------------
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out_dir", required=True, help="Directory containing CAT result TSV files.")
+    parser.add_argument("--alpha", type=float, default=0.10, help="Equivalence test significance level.")
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    import argparse
-    p = argparse.ArgumentParser()
-    p.add_argument("--out_dir", required=True)
-    args = p.parse_args()
-    generate_table(args.out_dir)
+    args = _parse_args()
+    generate_table(args.out_dir, alpha=args.alpha)
