@@ -162,8 +162,15 @@ def main():
         default="output.json",
         help="Output file to save the results",
     )
-    TOTAL_DOCS = 12000000
-    N_QUERIES = TOTAL_DOCS / 16
+    # Define constant
+    TOTAL_DOCS=12000000
+    BASE_BATCH_SIZE=64
+    GROUP_SIZE=16
+    # how many steps to get, TOTAL_DOCS / (BATCH_SIZE * GROUP_SIZE)
+    PER_BATCH_DOCS=BASE_BATCH_SIZE * GROUP_SIZE
+    total_steps=TOTAL_DOCS // PER_BATCH_DOCS
+
+    print(f"Total steps: {total_steps} for {TOTAL_DOCS} docs")
     output = {}
     for data in tqdm(TRAIN_JSONL, desc="Processing All"):
         name = data.split("/")[-1].split(".")[0]
@@ -176,12 +183,14 @@ def main():
         # make dataloader
         dataloader = DataLoader(
             dataset,
-            batch_size=1000,
-            shuffle=False,
+            batch_size=BASE_BATCH_SIZE,
+            shuffle=True,
             collate_fn=TrainingCollator(None),
         )
         deltas, qids = [], []
-        for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches", total=len(dataloader)):
+        for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches", total=total_steps):
+            if i >= total_steps:
+                break
             docs = batch["docs_batch"]
             qids = batch["query_id"]
             deltas.append(
