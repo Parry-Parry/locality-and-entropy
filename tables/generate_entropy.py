@@ -244,7 +244,7 @@ def generate_table(out_dir: str, *, alpha: float = 0.10) -> None:
             if pd.isna(value):
                 cell = "-"
             else:
-                cell = f"{value:.2f}"
+                cell = f"{value:.3f}"
             cells.append(cell)
 
         latex.append(

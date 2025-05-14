@@ -157,7 +157,7 @@ def generate_table(out_dir, alpha=0.10):
                 # hyphen plus phantom superscript
                 cells.append(f"–\\textsuperscript{{\\phantom{{{'a'*max_sup_len}}}}}")
             else:
-                cells.append(f"{val:.2f}\\textsuperscript{{{sup_text}}}")
+                cells.append(f"{val:.3f}\\textsuperscript{{{sup_text}}}")
 
         latex.append(f"  {loss} & {dom} & " + " & ".join(cells) + r" \\")
 
