@@ -162,6 +162,8 @@ def main():
         default="output.json",
         help="Output file to save the results",
     )
+    args = parser.parse_args()
+
     # Define constant
     TOTAL_DOCS=12000000
     BASE_BATCH_SIZE=64
@@ -203,13 +205,14 @@ def main():
         diameters = {qid: delta for qid, delta in zip(qids, deltas)}
 
         overall_diameter = np.quantile(deltas, 0.99)
+        print(f"Overall diameter for {name}: {overall_diameter}")
         output[name] = {
             "diameter": overall_diameter,
             "diameters": diameters,
             "num_queries": len(dataset),
             "num_docs": len(dataset)*16,
         }
-    with open(parser.output, "w") as f:
+    with open(args.output, "w") as f:
         json.dump(output, f, indent=4)
 
 
