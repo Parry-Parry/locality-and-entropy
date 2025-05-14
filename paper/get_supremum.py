@@ -171,7 +171,6 @@ def main():
             data,
             FlexIndex("data/doc_embeddings"),
             group_size=16,
-            corpus="msmarco-passage/train/triples-small",
             no_positive=False,
             teacher_file=None,
             lazy_load_text=True,
