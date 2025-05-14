@@ -99,7 +99,7 @@ def annotate_equivalence(
         for _, row in sub[mask].iterrows():
             graph.add_edge(row["subset1"], row["subset2"])
 
-        components = sorted(graph.connected_components(), key=lambda c: sorted(c)[0])
+        components = sorted(nx.connected_components(graph), key=lambda c: sorted(c)[0])
         for idx, component in enumerate(components):
             label = string.ascii_uppercase[idx]
             for s in component:
