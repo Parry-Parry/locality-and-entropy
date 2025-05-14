@@ -176,7 +176,7 @@ def main():
             teacher_file=None,
             lazy_load_text=True,
         )
-        # make dataloader 
+        # make dataloader
         dataloader = DataLoader(
             dataset,
             batch_size=16,
@@ -184,7 +184,7 @@ def main():
             collate_fn=TrainingCollator(tokenizer),
         )
         deltas = []
-        for batch in tqdm(dataloader, desc="Processing Batches"):
+        for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches"):
             docs = batch["docs_batch"]
             deltas.append(
                 robust_diameter(
