@@ -176,7 +176,7 @@ def main():
         # make dataloader
         dataloader = DataLoader(
             dataset,
-            batch_size=16,
+            batch_size=1000,
             shuffle=False,
             collate_fn=TrainingCollator(None),
         )
