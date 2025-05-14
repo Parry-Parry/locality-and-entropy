@@ -50,9 +50,11 @@ def main():
         help="Output file to save the results",
     )
     TOTAL_DOCS = 12000000
-    N_QUERIES = TOTAL_DOCS / 16
+    N_QUERIES = TOTAL_DOCS // 16
 
     total_steps = int(N_QUERIES * 32)
+
+    print(f"Total steps: {total_steps} for {N_QUERIES} queries and {TOTAL_DOCS} docs")
 
     bert = AutoModel.from_pretrained("bert-base-uncased").cuda()
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
