@@ -172,7 +172,6 @@ def main():
             FlexIndex("data/doc_embeddings"),
             group_size=16,
             no_positive=False,
-            teacher_file=None,
         )
         # make dataloader
         dataloader = DataLoader(
