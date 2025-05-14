@@ -49,12 +49,15 @@ def main():
         default="output.json",
         help="Output file to save the results",
     )
-    TOTAL_DOCS = 12000000
-    N_QUERIES = TOTAL_DOCS // 16
+    # Define constant
+    TOTAL_DOCS=12000000
+    BASE_BATCH_SIZE=32
+    GROUP_SIZE=16
+    # how many steps to get, TOTAL_DOCS / (BATCH_SIZE * GROUP_SIZE)
+    PER_BATCH_DOCS=BASE_BATCH_SIZE * GROUP_SIZE
+    total_steps=TOTAL_DOCS // PER_BATCH_DOCS
 
-    total_steps = int(N_QUERIES * 32)
-
-    print(f"Total steps: {total_steps} for {N_QUERIES} queries and {TOTAL_DOCS} docs")
+    print(f"Total steps: {total_steps} for {TOTAL_DOCS} docs")
 
     bert = AutoModel.from_pretrained("bert-base-uncased").cuda()
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
@@ -98,7 +101,6 @@ def main():
         output[name] = {
             "diameter": overall_diameter,
             "diameters": deltas,
-            "num_queries": N_QUERIES,
             "num_docs": TOTAL_DOCS,
         }
     with open(parser.output, "w") as f:
