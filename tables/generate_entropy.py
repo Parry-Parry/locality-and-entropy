@@ -44,9 +44,7 @@ LOSS_ORDER: List[str] = ["LCE", "marginMSE"]
 
 SUBSET_ORDER: List[str] = [
     "lower_quartile",
-    "below_median",
     "inner_quartiles",
-    "above_median",
     "upper_quartile",
     "outlier_quartiles",
 ]
@@ -245,8 +243,6 @@ def generate_table(out_dir: str, *, alpha: float = 0.10) -> None:
                 cell = "-"
             else:
                 cell = f"{value:.2f}"
-                if superscript:
-                    cell += rf"\textsuperscript{{{superscript}}}"
             cells.append(cell)
 
         latex.append(
