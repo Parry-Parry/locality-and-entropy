@@ -68,7 +68,7 @@ def main():
         # make dataloader
         dataloader = DataLoader(
             dataset,
-            batch_size=128,
+            batch_size=32,
             shuffle=False,
             collate_fn=DotDataCollator(tokenizer),
         )
@@ -77,7 +77,9 @@ def main():
             docs = batch["docs_batch"]
             # Move the tensors to GPU
             docs = {k: v.cuda() for k, v in docs.items()}
-            cls_vectors_numpy = bert(**docs).last_hidden_state[:, 0, :].cpu().detach().numpy()
+            with torch.no_grad():
+                # Get the CLS token representations
+                cls_vectors_numpy = bert(**docs).last_hidden_state[:, 0, :].cpu().numpy()
             deltas.append(
                 robust_diameter(
                     cls_vectors_numpy,
