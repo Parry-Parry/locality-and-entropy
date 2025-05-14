@@ -71,6 +71,7 @@ def main():
             batch_size=32,
             shuffle=False,
             collate_fn=DotDataCollator(tokenizer),
+            num_workers=4,
         )
         deltas = []
         total_steps = len(dataloader)
