@@ -51,7 +51,7 @@ def main():
     )
     # Define constant
     TOTAL_DOCS=12000000
-    BASE_BATCH_SIZE=32
+    BASE_BATCH_SIZE=64
     GROUP_SIZE=16
     # how many steps to get, TOTAL_DOCS / (BATCH_SIZE * GROUP_SIZE)
     PER_BATCH_DOCS=BASE_BATCH_SIZE * GROUP_SIZE
@@ -75,7 +75,7 @@ def main():
         # make dataloader
         dataloader = DataLoader(
             dataset,
-            batch_size=32,
+            batch_size=BASE_BATCH_SIZE,
             shuffle=False,
             collate_fn=DotDataCollator(tokenizer),
             num_workers=4,
@@ -108,6 +108,7 @@ def main():
             "diameter": overall_diameter,
             "diameters": deltas,
             "num_docs": TOTAL_DOCS,
+            "num_queries": BASE_BATCH_SIZE*total_steps,
         }
     with open(parser.output, "w") as f:
         json.dump(output, f, indent=4)
