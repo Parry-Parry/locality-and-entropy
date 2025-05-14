@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 from rankers import DotDataCollator, TrainingDataset
+import ir_datasets as irds
 import torch
 from torch.utils.data import DataLoader
 import json
@@ -59,7 +60,7 @@ def main():
         dataset = TrainingDataset(
             data,
             group_size=16,
-            corpus="msmarco-passage/train/triples-small",
+            corpus=irds.load("msmarco-passage/train/triples-small"),
             no_positive=False,
             teacher_file=None,
             lazy_load_text=True,
