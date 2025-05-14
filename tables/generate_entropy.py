@@ -217,9 +217,9 @@ def generate_table(out_dir: str, *, alpha: float = 0.10) -> None:
     # Header row
     header_cells: List[str] = []
     for g in GROUPS:
-        header_cells.append(f"& {g} nDCG")
+        header_cells.append("& nDCG")
         if "MAP" in GROUP_METRICS[g]:
-            header_cells.append(f"& {g} MAP")
+            header_cells.append("& MAP")
     latex.append("    Loss & Split  " + " ".join(header_cells) + r" \\")
     latex.append(r"  \midrule")
 
