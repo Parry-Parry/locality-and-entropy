@@ -47,6 +47,8 @@ SUBSET_ORDER: List[str] = [
     "inner_quartiles",
     "upper_quartile",
     "outlier_quartiles",
+    "below_median",
+    "above_median",
 ]
 
 GROUPS: List[str] = ["dl19", "dl20", "beir"]
@@ -217,9 +219,9 @@ def generate_table(out_dir: str, *, alpha: float = 0.10) -> None:
     # Header row
     header_cells: List[str] = []
     for g in GROUPS:
-        header_cells.append("& nDCG")
+        header_cells.append(f"nDCG")
         if "MAP" in GROUP_METRICS[g]:
-            header_cells.append("& MAP")
+            header_cells.append(f"& MAP")
     latex.append("    Loss & Split  " + " ".join(header_cells) + r" \\")
     latex.append(r"  \midrule")
 
