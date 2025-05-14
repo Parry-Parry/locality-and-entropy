@@ -52,6 +52,8 @@ def main():
     TOTAL_DOCS = 12000000
     N_QUERIES = TOTAL_DOCS / 16
 
+    total_steps = int(N_QUERIES * 32)
+
     bert = AutoModel.from_pretrained("bert-base-uncased").cuda()
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     output = {}
@@ -74,8 +76,9 @@ def main():
             num_workers=4,
         )
         deltas = []
-        total_steps = len(dataloader)
         for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches", total=total_steps):
+            if i >= total_steps:
+                break
             docs = batch["docs_batch"]
             # Move the tensors to GPU
             docs = {k: v.cuda() for k, v in docs.items()}
