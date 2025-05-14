@@ -90,11 +90,17 @@ def main():
             with torch.no_grad():
                 # Get the CLS token representations
                 cls_vectors_numpy = bert(**docs).last_hidden_state[:, 0, :].cpu().numpy()
-            deltas.append(
+            
+            # reshape for group size
+            cls_vectors_numpy = cls_vectors_numpy.reshape(
+                (cls_vectors_numpy.shape[0] // GROUP_SIZE, GROUP_SIZE, -1)
+            )
+            deltas.extend(
                 robust_diameter(
-                    cls_vectors_numpy,
+                    cls_vectors_numpy[i],
                     alpha=0.99,
                 )
+                for i in range(cls_vectors_numpy.shape[0])
             )
 
         overall_diameter = np.quantile(deltas, 0.99)
