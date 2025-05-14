@@ -173,7 +173,6 @@ def main():
             group_size=16,
             no_positive=False,
             teacher_file=None,
-            lazy_load_text=True,
         )
         # make dataloader
         dataloader = DataLoader(
