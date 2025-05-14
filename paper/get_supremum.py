@@ -181,7 +181,7 @@ def main():
             collate_fn=TrainingCollator(None),
         )
         deltas, qids = [], []
-        for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches"):
+        for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches", total=len(dataloader)):
             docs = batch["docs_batch"]
             qids = batch["query_id"]
             deltas.append(
@@ -197,8 +197,8 @@ def main():
         output[name] = {
             "diameter": overall_diameter,
             "diameters": diameters,
-            "num_queries": N_QUERIES,
-            "num_docs": TOTAL_DOCS,
+            "num_queries": len(dataset),
+            "num_docs": len(dataset)*16,
         }
     with open(parser.output, "w") as f:
         json.dump(output, f, indent=4)
