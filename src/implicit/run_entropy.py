@@ -13,13 +13,30 @@ import logging
 import os
 import numpy as np
 from scipy.special import softmax
+from scipy.special import expit as sigmoid
 from implicit.util import save_json, load_json
 
 
 def entropy(prob_dist):
     """Compute Shannon entropy efficiently."""
-    return -np.sum(prob_dist * np.log2(prob_dist + 1e-9))  # Avoid log(0)
+    return -np.sum(prob_dist * np.log2(prob_dist + 1e-12))  # Avoid log(0)
 
+def pairwise_entropy(scores):
+    """
+    scores : (k,) 1-D array of raw (unnormalised) scores for one query.
+    Returns the average binary entropy over all i<j pairs (bits).
+    """
+    # pair-wise logit differences
+    diff = scores[:, None] - scores[None, :]          # shape (k, k)
+    p    = sigmoid(diff)                              # Bernoulli probs
+
+    # binary Shannon entropy, add tiny ε for numerical safety
+    eps  = 1e-12
+    h    = -(p * np.log2(p + eps) + (1.0 - p) * np.log2(1.0 - p + eps))
+
+    # use only upper-triangular part (i < j) to avoid double-counting
+    k = len(scores)
+    return h[np.triu_indices(k, k=1)].mean()       
 
 def mine(
     file,
@@ -88,8 +105,8 @@ def mine(
                     continue
 
                 for qid, group in tqdm(frame.groupby("qid")):
-                    scores = softmax(group["score"].values)
-                    entropy_lookup[qid] = entropy(scores)
+                    scores = group["score"].values.astype(np.float64)
+                    entropy_lookup[qid] = pairwise_entropy(scores)
 
                 buffer = []
     
