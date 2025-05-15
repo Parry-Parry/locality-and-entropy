@@ -54,9 +54,9 @@ def mine(
     lookup = defaultdict(dict)
     name = model_name_or_path.split('/')[-1] if name_override is None else name_override
     out_file = out_dir + f"/{name}.{group_size}.entropy.json.gz"
-    if os.path.exists(out_file):
-        logging.info(f"File already exists at {out_file}")
-        return f"File already exists at {out_file}"
+    #if os.path.exists(out_file):
+        #logging.info(f"File already exists at {out_file}")
+        #return f"File already exists at {out_file}"
     if os.path.exists(teacher_file):
         lookup = load_json(teacher_file)
     else:
