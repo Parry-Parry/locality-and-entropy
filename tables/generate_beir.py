@@ -5,143 +5,160 @@ import numpy as np
 import networkx as nx
 import statsmodels.stats.weightstats as ws
 import string
+from ir_measures import NDCG
 
 # Configuration
 LOSS_ORDER   = ["LCE", "RankNet", "marginMSE", "KL"]
-DOMAIN_ORDER = ["Random", "BM25", "Cross-Encoder", "Ensemble"]
+ARCHS        = ["BE", "CE"]
 ALPHA        = 0.10
-MEASURE_NAME = "nDCG@10"
+METRIC_NAME  = "nDCG@10"
 
 def tost(x, y, low_eq=-0.01, high_eq=0.01):
     """
-    Two‐one‐sided t‐test for equivalence on MEASURE_NAME, fixed bounds.
-    Returns (p_overall, p_low, p_high).
+    Two‐one‐sided t-test for equivalence on METRIC_NAME, fixed bounds.
+    Returns (p_overall, p_lower, p_upper).
     """
     p, (_, pl, _), (_, ph, _) = ws.ttost_ind(x, y, low_eq, high_eq)
     return p, pl, ph
 
-def annotate_equivalence(df_tost, alpha=ALPHA, measure=MEASURE_NAME):
+def annotate_equivalence(df_tost, alpha=ALPHA, measure=METRIC_NAME):
     """
-    For each loss, build a graph over DOMAIN_ORDER; connect domains if
-    p_lower>alpha and p_upper>alpha, then label connected components A, B, C, D.
+    For each (loss, arch), build graph over datasets,
+    connect pairs with p_lower>alpha and p_upper>alpha,
+    label connected components A, B, C…,
+    return DataFrame(loss, arch, dataset, comp).
     """
-    records = []
-    for loss, sub in df_tost.groupby("loss"):
+    recs = []
+    for (loss, arch), sub in df_tost.groupby(["loss","arch"]):
         G = nx.Graph()
-        G.add_nodes_from(DOMAIN_ORDER)
+        ds_all = sorted(pd.concat([sub.dataset1, sub.dataset2]).unique())
+        G.add_nodes_from(ds_all)
         for _, row in sub.iterrows():
-            if (row["measure"] == measure
-                and row["p_lower"] > alpha
-                and row["p_upper"] > alpha):
-                G.add_edge(row["domain1"], row["domain2"])
+            if (row.measure == measure
+                and row.p_lower > alpha
+                and row.p_upper > alpha):
+                G.add_edge(row.dataset1, row.dataset2)
         comps = sorted(nx.connected_components(G), key=lambda c: sorted(c)[0])
         for idx, comp in enumerate(comps):
             label = string.ascii_uppercase[idx]
-            for d in comp:
-                records.append({"loss": loss, "domain": d, "comp": label})
-    return pd.DataFrame.from_records(records)
+            for ds in comp:
+                recs.append({"loss":loss, "arch":arch, "dataset":ds, "comp":label})
+    return pd.DataFrame.from_records(recs)
 
-def main(run_dir: str, out_dir: str):
-    """
-    Reads perquery_beir.tsv.gz, aggregates over domains for BE and CE,
-    computes equivalence classes via TOST, and writes two LaTeX tables
-    (one per architecture) with Loss × Domains.
-    """
+def main(run_dir, out_dir):
     os.makedirs(out_dir, exist_ok=True)
 
-    # 1) Load per‐query BEIR results
-    df = pd.read_csv(
+    # load per-query BEIR results
+    perq = pd.read_csv(
         os.path.join(run_dir, "perquery_beir.tsv.gz"),
         sep="\t", compression="gzip", low_memory=False
     )
-    # Filter to our losses, architectures, and measure
-    df = df[
-        df.loss.isin(LOSS_ORDER) &
-        df.arch.isin(["BE", "CE"]) &
-        (df.measure == MEASURE_NAME)
+
+    # filter losses and architectures and metric
+    perq = perq[
+        perq.loss.isin(LOSS_ORDER) &
+        perq.arch.isin(ARCHS) &
+        (perq.measure == METRIC_NAME)
     ]
 
-    for arch in ["BE", "CE"]:
-        df_arch = df[df.arch == arch]
+    # compute per-dataset mean nDCG
+    means = (
+        perq
+        .groupby(["dataset_id","loss","arch"])["value"]
+        .mean()
+        .reset_index()
+    )
 
-        # 2) Compute per‐domain means
-        means = (
-            df_arch
-            .groupby(["loss", "domain"])["value"]
-            .mean()
-            .reset_index()
+    # pairwise TOST across datasets for each loss,arch
+    tost_recs = []
+    for (loss, arch), sub in perq.groupby(["loss","arch"]):
+        ds_list = sorted(sub.dataset_id.unique())
+        for i in range(len(ds_list)):
+            for j in range(i+1, len(ds_list)):
+                d1, d2 = ds_list[i], ds_list[j]
+                x = sub[(sub.dataset_id==d1)]["value"].values
+                y = sub[(sub.dataset_id==d2)]["value"].values
+                if len(x)<2 or len(y)<2:
+                    continue
+                p, pl, ph = tost(x, y)
+                tost_recs.append({
+                    "loss":     loss,
+                    "arch":     arch,
+                    "dataset1": d1,
+                    "dataset2": d2,
+                    "measure":  METRIC_NAME,
+                    "p_value":  p,
+                    "p_lower":  pl,
+                    "p_upper":  ph
+                })
+    df_tost = pd.DataFrame.from_records(tost_recs)
+
+    # annotate equivalence classes
+    df_eq = annotate_equivalence(df_tost)
+
+    # build lookup maps
+    comp_map = df_eq.set_index(["loss","arch","dataset"])["comp"].to_dict()
+    comp_groups = {
+        (row.loss,row.arch,row.comp):
+            set(df_eq.query("loss==@row.loss and arch==@row.arch and comp==@row.comp")["dataset"])
+        for row in df_eq.itertuples()
+    }
+
+    # sorted dataset list
+    datasets = sorted(means.dataset_id.unique())
+    # assign letter codes to datasets
+    ds_codes = {ds: string.ascii_uppercase[i] for i, ds in enumerate(datasets)}
+
+    # for each architecture, produce a table
+    for arch in ARCHS:
+        df_m = means[means.arch==arch]
+        pivot = (
+            df_m.pivot(index="loss", columns="dataset_id", values="value")
+                .reindex(index=LOSS_ORDER, columns=datasets)
         )
-        means_pivot = (
-            means
-            .pivot(index="loss", columns="domain", values="value")
-            .reindex(index=LOSS_ORDER, columns=DOMAIN_ORDER)
-        )
 
-        # 3) Pairwise TOST across domains
-        recs = []
-        for loss, sub in df_arch.groupby("loss"):
-            for i in range(len(DOMAIN_ORDER)):
-                for j in range(i+1, len(DOMAIN_ORDER)):
-                    d1, d2 = DOMAIN_ORDER[i], DOMAIN_ORDER[j]
-                    x = sub[sub.domain == d1]["value"].values
-                    y = sub[sub.domain == d2]["value"].values
-                    # require at least two samples per domain
-                    if len(x) < 2 or len(y) < 2:
-                        continue
-                    p, pl, ph = tost(x, y)
-                    recs.append({
-                        "loss":     loss,
-                        "domain1":  d1,
-                        "domain2":  d2,
-                        "measure":  MEASURE_NAME,
-                        "p_value":  p,
-                        "p_lower":  pl,
-                        "p_upper":  ph
-                    })
-        tost_df = pd.DataFrame.from_records(recs)
-
-        # 4) Annotate equivalence classes
-        eq_df = annotate_equivalence(tost_df)
-
-        # 5) Merge comp labels into means
-        merged = means.merge(eq_df, on=["loss", "domain"], how="left")
-        comp_map = dict(zip(zip(merged.loss, merged.domain), merged.comp))
-
-        # 6) Build LaTeX table
+        # begin LaTeX
         latex = [
             r"\begin{table}[t]",
-            rf"  \caption{{Mean {MEASURE_NAME} for {arch} across domains}}",
+            rf"  \caption{{Mean {METRIC_NAME} for architecture {arch} across BEIR datasets}}",
             r"  \centering",
             r"  \footnotesize",
             r"  \setlength{\tabcolsep}{3pt}",
-            r"  \begin{tabular}{l" + "c"*len(DOMAIN_ORDER) + "}",
+            r"  \begin{tabular}{l" + "c"*len(datasets) + "}",
             r"  \toprule",
-            "Loss & " + " & ".join(DOMAIN_ORDER) + r" \\",
+            "Loss & " + " & ".join(datasets) + r" \\",
             r"  \midrule"
         ]
 
         for loss in LOSS_ORDER:
-            row_cells = []
-            for d in DOMAIN_ORDER:
-                v = means_pivot.loc[loss, d]
-                sup = comp_map.get((loss, d), "")
+            cells = []
+            for ds in datasets:
+                v = pivot.loc[loss, ds]
+                sup = ""
+                comp = comp_map.get((loss, arch, ds), "")
+                members = comp_groups.get((loss, arch, comp), set())
+                # superscript codes for other equivalent datasets
+                codes = sorted(ds_codes[d] for d in members if d!=ds)
+                if codes:
+                    sup = "".join(codes)
                 if pd.isna(v):
-                    cell = "–"
+                    cells.append("–")
                 else:
-                    cell = f"{v:.3f}\\textsuperscript{{{sup}}}"
-                row_cells.append(cell)
-            latex.append(f"{loss} & " + " & ".join(row_cells) + r" \\")
+                    cells.append(f"{v:.3f}\\textsuperscript{{{sup}}}")
+            latex.append(f"{loss} & " + " & ".join(cells) + r" \\")
+
         latex += [
             r"  \bottomrule",
             r"  \end{tabular}",
             r"\end{table}"
         ]
 
-        # 7) Write out
-        out_path = os.path.join(out_dir, f"summary_{arch}.tex")
+        # write file
+        out_path = os.path.join(out_dir, f"beir_summary_{arch}.tex")
         with open(out_path, "w") as f:
             f.write("\n".join(latex))
         print(f"Wrote {out_path}")
+
 
 if __name__ == "__main__":
     import argparse
