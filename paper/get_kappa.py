@@ -20,7 +20,7 @@ SCORE_GZ = [
 
 def compute_kappa_for_file(jsonl_path, scores_path):
     """Compute κ_q for each query in the JSONL file."""
-    with gzip.open(scores_path, 'r', encoding='utf-8') as f:
+    with gzip.open(scores_path, 'rt', encoding='utf-8') as f:
         scores_lookup = json.load(f)
     kappa_per_query = {}
     with open(jsonl_path, 'r', encoding='utf-8') as f:
