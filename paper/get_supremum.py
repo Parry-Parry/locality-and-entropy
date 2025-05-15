@@ -199,7 +199,9 @@ def main():
         for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches", total=total_steps):
             if i >= total_steps:
                 break
-            docs = batch["docs_batch"]
+            docs = batch["docs_batch"].astype("float32")
+            norms = np.linalg.norm(docs, axis=1, keepdims=True)
+            docs  = docs / np.clip(norms, a_min=1e-9, a_max=None)
             qids = batch["query_id"]
             deltas.append(
                 robust_diameter(
@@ -207,11 +209,6 @@ def main():
                     alpha=0.99,
                 )
             )
-            batch_sq_norm = np.square(docs).sum(axis=1).max()
-            if batch_sq_norm > max_sq_norm_global:
-                max_sq_norm_global = batch_sq_norm
-
-        L_const = 2.0 * np.sqrt(max_sq_norm_global)
         
         diameters = {qid: delta for qid, delta in zip(qids, deltas)}
 
@@ -222,7 +219,7 @@ def main():
             "diameters": diameters,
             "num_queries": len(dataset),
             "num_docs": len(dataset)*16,
-            "Lipschitz_constant": L_const,
+            "Lipschitz_constant": 2,
         }
     with open(args.output, "w") as f:
         json.dump(output, f, indent=4)
