@@ -33,7 +33,7 @@ def compute_kappa_for_file(jsonl_path, scores_path):
             docs = [doc_id_a] + doc_id_b
 
             scores = np.array([
-                scores_lookup[qid].get(doc_id, 0.0) for doc_id in docs
+                scores_lookup[str(qid)].get(doc_id, 0.0) for doc_id in docs
             ])
 
 
