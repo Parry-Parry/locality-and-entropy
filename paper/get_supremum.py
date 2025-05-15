@@ -157,6 +157,11 @@ TRAIN_JSONL=[
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--index",
+        type=str,
+        help="Path to the index file",
+    )
+    parser.add_argument(
         "--output",
         type=str,
         default="output.json",
@@ -178,7 +183,7 @@ def main():
         name = data.split("/")[-1].split(".")[0]
         dataset = TrainingDataset(
             data,
-            FlexIndex("data/doc_embeddings"),
+            FlexIndex(args.index),
             group_size=16,
             no_positive=False,
         )
@@ -189,6 +194,7 @@ def main():
             shuffle=True,
             collate_fn=TrainingCollator(None),
         )
+        max_sq_norm_global = 0.0
         deltas, qids = [], []
         for i, batch in tqdm(enumerate(dataloader), desc="Processing Batches", total=total_steps):
             if i >= total_steps:
@@ -201,6 +207,11 @@ def main():
                     alpha=0.99,
                 )
             )
+            batch_sq_norm = np.square(docs).sum(axis=1).max()
+            if batch_sq_norm > max_sq_norm_global:
+                max_sq_norm_global = batch_sq_norm
+
+        L_const = 2.0 * np.sqrt(max_sq_norm_global)
         
         diameters = {qid: delta for qid, delta in zip(qids, deltas)}
 
@@ -211,6 +222,7 @@ def main():
             "diameters": diameters,
             "num_queries": len(dataset),
             "num_docs": len(dataset)*16,
+            "Lipschitz_constant": L_const,
         }
     with open(args.output, "w") as f:
         json.dump(output, f, indent=4)
