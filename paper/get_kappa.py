@@ -37,7 +37,6 @@ def compute_kappa_for_file(jsonl_path, scores_path):
             ])
 
 
-            scores = np.array(item['scores'], dtype=float)
             # biased sampling distribution ν_q
             nu = scores / scores.sum()
             # uniform target distribution μ_q
