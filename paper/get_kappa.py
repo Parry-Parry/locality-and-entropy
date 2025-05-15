@@ -6,16 +6,16 @@ from tqdm import tqdm
 
 TRAIN_JSONL = [
     "data/bm25.16.jsonl",
-    "data/crossencoder.16.jsonl",
-    "data/random.16.jsonl",
-    "data/ensemble.16.jsonl",
+   # "data/crossencoder.16.jsonl",
+    #"data/random.16.jsonl",
+   # "data/ensemble.16.jsonl",
 ]
 
 SCORE_GZ = [
-    "data/bm25.scores.json.gz",
-    "data/crossencoder.scores.json.gz",
-    "data/random.scores.json.gz",
-    "data/ensemble.all.scores.json.gz",
+    "data/bm25.crossencoder.scores.json.gz",
+    #"data/crossencoder.scores.json.gz",
+    #"data/random.scores.json.gz",
+    #"data/ensemble.all.scores.json.gz",
 ]
 
 def compute_kappa_for_file(jsonl_path, scores_path):
