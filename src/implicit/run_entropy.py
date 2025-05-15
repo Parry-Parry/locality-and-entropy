@@ -49,6 +49,12 @@ def mine(
     chunk_batches: int = 10000,
     name_override : str = None
 ):
+    TOTAL_DOCS=12000000
+    BASE_BATCH_SIZE=128
+    GROUP_SIZE=16
+    # how many steps to get, TOTAL_DOCS / (BATCH_SIZE * GROUP_SIZE)
+    PER_BATCH_DOCS=BASE_BATCH_SIZE * GROUP_SIZE
+    total_steps=TOTAL_DOCS // PER_BATCH_DOCS
     chunk_size = chunk_batches * batch_size
     dataset = irds.load(dataset)
     lookup = defaultdict(dict)
@@ -96,7 +102,10 @@ def mine(
     # read json lines by line in chunks using a buffer
     with open(file, "r") as f:
         buffer = []
+        curr_steps = 0
         for line in f:
+            if curr_steps >= total_steps:
+                break
             buffer.append(json.loads(line))
             if len(buffer) == chunk_size:
                 frame = pivot_triples(buffer)
@@ -108,6 +117,7 @@ def mine(
                     scores = group["score"].values.astype(np.float64)
                     entropy_lookup[qid] = pairwise_entropy(scores)
 
+                curr_steps += len(frame.qid.unique())
                 buffer = []
     
     save_json(entropy_lookup, out_file)
