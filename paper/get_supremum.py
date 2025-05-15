@@ -11,12 +11,12 @@ from pyterrier_dr import FlexIndex
 import random
 from scipy.spatial.distance import pdist
 
-def robust_diameter(embeddings, alpha=0.99):
+def robust_diameter(embeddings, alpha=0.95):
     """
     embeddings : (k, d) float32/float64 ndarray
         k document vectors for a single query (k = 16 here).
     alpha      : float in (0,1)
-        Quantile used as robust upper bound; default 0.99.
+        Quantile used as robust upper bound; default 0.95.
 
     Returns
     -------
@@ -25,7 +25,7 @@ def robust_diameter(embeddings, alpha=0.99):
         the alpha-quantile of all pairwise cosine distances.
     """
     # pairwise cosine distances (size k*(k-1)/2 = 120 for k=16)
-    dists = pdist(embeddings, metric="cosine")
+    dists = pdist(embeddings, metric="euclidean")
     Δ_hat = np.quantile(dists, alpha)
     return float(Δ_hat)
 
