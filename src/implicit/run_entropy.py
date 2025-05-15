@@ -103,6 +103,7 @@ def mine(
     with open(file, "r") as f:
         buffer = []
         curr_steps = 0
+        progress_bar = tqdm(total=total_steps, desc="Processing batches")
         for line in f:
             if curr_steps >= total_steps:
                 break
@@ -113,11 +114,12 @@ def mine(
                     buffer = []
                     continue
 
-                for qid, group in tqdm(frame.groupby("qid")):
+                for qid, group in frame.groupby("qid"):
                     scores = group["score"].values.astype(np.float64)
                     entropy_lookup[qid] = pairwise_entropy(scores)
 
                 curr_steps += len(frame.qid.unique())
+                progress_bar.update(len(frame.qid.unique()))
                 buffer = []
     
     save_json(entropy_lookup, out_file)
