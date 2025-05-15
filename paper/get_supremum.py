@@ -166,7 +166,7 @@ def main():
 
     # Define constant
     TOTAL_DOCS=12000000
-    BASE_BATCH_SIZE=64
+    BASE_BATCH_SIZE=128
     GROUP_SIZE=16
     # how many steps to get, TOTAL_DOCS / (BATCH_SIZE * GROUP_SIZE)
     PER_BATCH_DOCS=BASE_BATCH_SIZE * GROUP_SIZE
