@@ -31,9 +31,11 @@ def compute_kappa_for_file(jsonl_path, scores_path):
             doc_id_b = item['doc_id_b']
 
             docs = [doc_id_a] + doc_id_b
-
+            if str(qid) not in scores_lookup:
+                print(f"Warning: Query ID {qid} not found in scores lookup.")
+                continue
             scores = np.array([
-                scores_lookup[str(qid)].get(doc_id, 0.0) for doc_id in docs
+                scores_lookup[str(qid)].get(str(doc_id), 0.0) for doc_id in docs
             ])
 
 
