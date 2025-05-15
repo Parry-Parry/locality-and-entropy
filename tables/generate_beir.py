@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 import string
 import statsmodels.stats.weightstats as ws
-from ir_measures import AP, NDCG
+from ir_measures import NDCG
 
 # fixed orders
 LOSS_ORDER  = ["LCE", "marginMSE"]
@@ -31,10 +31,13 @@ def annotate_equivalence(df_tost, alpha=ALPHA, measure="nDCG@10"):
     records = []
     for (loss, arch), sub in df_tost.groupby(["loss","arch"]):
         G = nx.Graph()
-        ds_list = sorted(sub["dataset1"].append(sub["dataset2"]).unique())
+        # combine dataset1 and dataset2 into one list
+        ds_list = sorted(pd.concat([sub["dataset1"], sub["dataset2"]]).unique())
         G.add_nodes_from(ds_list)
         for _, row in sub.iterrows():
-            if row["measure"] == measure and row["p_lower"] > alpha and row["p_upper"] > alpha:
+            if (row["measure"] == measure
+                and row["p_lower"] > alpha
+                and row["p_upper"] > alpha):
                 G.add_edge(row["dataset1"], row["dataset2"])
         comps = sorted(nx.connected_components(G), key=lambda c: sorted(c)[0])
         for idx, comp in enumerate(comps):
@@ -61,7 +64,7 @@ def generate_summary(run_dir: str, out_dir: str):
     # 1) load per-query BEIR data
     perq = pd.read_csv(
         os.path.join(run_dir, "perquery_beir.tsv.gz"),
-        sep="\t", compression="gzip"
+        sep="\t", compression="gzip", low_memory=False
     )
 
     # keep only our two losses and architectures BE, CE
@@ -77,7 +80,6 @@ def generate_summary(run_dir: str, out_dir: str):
         .mean()
         .reset_index()
     )
-    means["metric"] = "nDCG"
 
     # 3) pairwise TOST across datasets
     records = []
@@ -157,15 +159,18 @@ def generate_summary(run_dir: str, out_dir: str):
                 comp = comp_map.get((loss, arch, ds), "")
                 members = comp_groups.get((loss, arch, comp), set())
                 # superscript codes = other datasets in same comp
-                codes = [string.ascii_uppercase[i]
-                         for i, d in enumerate(sorted(merged.dataset_id.unique()))
-                         if d in members and d != ds]
+                codes = [
+                    string.ascii_uppercase[i]
+                    for i, d in enumerate(sorted(merged.dataset_id.unique()))
+                    if d in members and d != ds
+                ]
                 sup = "".join(codes)
                 if pd.isna(v):
                     cells.append("–")
                 else:
                     cells.append(f"{v:.2f}\\textsuperscript{{{sup}}}")
             latex.append(f"  {loss} & {ds} & " + " & ".join(cells) + r" \\")
+
     latex += [
         r"  \bottomrule",
         r"\end{tabular}",
@@ -180,7 +185,7 @@ def generate_summary(run_dir: str, out_dir: str):
     print(f"Wrote {path}")
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     import argparse
     p = argparse.ArgumentParser()
     p.add_argument("--run_dir", required=True)
