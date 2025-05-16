@@ -170,7 +170,7 @@ def main():
     args = parser.parse_args()
 
     # Define constant
-    TOTAL_DOCS=12000000
+    TOTAL_DOCS=1000000
     BASE_BATCH_SIZE=128
     GROUP_SIZE=16
     # how many steps to get, TOTAL_DOCS / (BATCH_SIZE * GROUP_SIZE)
