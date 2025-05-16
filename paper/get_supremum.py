@@ -200,15 +200,15 @@ def main():
             if i >= total_steps:
                 break
             docs = batch["docs_batch"].astype("float32")
+            docs = docs.reshape(
+                (docs.shape[0] // GROUP_SIZE, GROUP_SIZE, -1)
+            )
             norms = np.linalg.norm(docs, axis=1, keepdims=True)
             docs  = docs / np.clip(norms, a_min=1e-9, a_max=None)
             qids = batch["query_id"]
-            deltas.append(
-                robust_diameter(
-                    docs,
-                    alpha=0.99,
-                )
-            )
+            deltas.extend([
+                robust_diameter(docs[i], alpha=0.99) for i in range(docs.shape[0])
+            ])
         
         diameters = {qid: delta for qid, delta in zip(qids, deltas)}
 
