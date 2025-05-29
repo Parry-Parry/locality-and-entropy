@@ -1,16 +1,16 @@
-OUTPUT_DIR='sigir25-implicit-diff/random_data'
-CHECKPOINT='sigir25-implicit-diff/checkpoints/crossencoder'
+OUTPUT_DIR='random_data'
+CHECKPOINT='checkpoints/crossencoder'
 DATASET="msmarco-passage/train/triples-small"
 # Create output directory
 mkdir -p $OUTPUT_DIR
 
 # Dump triples to file
-python sigir25-implicit-diff/src/implicit/data_processing/get_triples.py \
+python src/implicit/data_processing/get_triples.py \
     --dataset $DATASET \
     --out_file "${OUTPUT_DIR}/triples.jsonl.gz"
 
 # Mine negatives
-python sigir25-implicit-diff/src/implicit/data_processing/mine_negatives.py \
+python src/implicit/data_processing/mine_negatives.py \
     --file "${OUTPUT_DIR}/triples.jsonl.gz" \
     --dataset $DATASET \
     --depth 10000 \
