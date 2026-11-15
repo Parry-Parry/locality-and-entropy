@@ -1,0 +1,7 @@
+file,n_comparisons,equivalent_as_coded,equivalent_as_correct,median_p_lower,median_p_upper
+main_intermediate/tost_dl19.tsv,97,75,0,0.4078904373760671,0.6295153354934045
+main_intermediate/tost_dl20.tsv,97,61,0,0.4184349712668803,0.7000579521816976
+main_intermediate/tost_beir.tsv,97,50,0,0.484248123257424,0.5214150219117509
+ent_intermediate/tost_cat_dl19.tsv,60,57,0,0.5067975225732744,0.4931885809263141
+ent_intermediate/tost_cat_dl20.tsv,60,50,0,0.4903559741558918,0.5096247662754114
+ent_intermediate/tost_cat_beir.tsv,84,31,0,0.47651894894317737,0.5234342265207858
