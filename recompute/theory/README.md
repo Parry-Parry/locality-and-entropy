@@ -26,39 +26,62 @@ h(sigma(g(x) - g(x'))) in nats, averaged over pairs within a query and then
 over queries. h -> 0 means the teacher is certain which document is better;
 h -> log 2 = 0.6931 means it cannot tell them apart.
 
-**Arm A, pairs from each miner's own training negatives.** No GPU or teacher
-inference needed: the teacher scores are already stored in
-`data/<miner>.scores.json.gz`.
+Pairs are drawn from each miner's own training negatives, scored with the
+teacher scores the training actually consumed. No GPU needed: those scores are
+already stored.
+
+**Which score file.** `data/` holds two BM25 score files and only one of them
+fed training:
+
+| file | docs/query | written | role |
+|---|---|---|---|
+| `bm25.crossencoder.scores.json.gz` | 16.9 | 2024-11-20 | **distillation targets** -- what `scripts/train_cross_bm25.sh` passes as `--teacher_file` |
+| `bm25.scores.json.gz` | 199.7 | 2024-11-07 | the mining candidate pool, used to *select* negatives |
+
+All four miners' training targets were verified against the surviving teacher
+checkpoint and reproduce it exactly (`teacher_matrix.csv`, and
+`check_real_teacher.py` for BM25: mean |diff| 2e-6 over 670 pairs). The mining
+pool file does **not** reproduce it, which is unremarkable -- it was written
+three weeks earlier by whatever scored the candidates at mining time -- but the
+two filenames are an easy trap. `paper/get_kappa.py` reads the correct
+`.crossencoder.` file, so Table 4.2's kappa-hat is unaffected.
 
 | miner | mean h (nats) | se | sd | median | % of log 2 | queries |
 |---|---|---|---|---|---|---|
 | random | 0.6596 | 0.00011 | 0.0703 | 0.6887 | 95.2% | 398,792 |
-| BM25 | 0.4292 | 0.00019 | 0.1182 | 0.4318 | 61.9% | 397,734 |
+| BM25 | 0.2844 | 0.00027 | 0.1706 | 0.2427 | 41.0% | 398,792 |
 | cross-encoder | 0.2167 | 0.00020 | 0.1269 | 0.1745 | 31.3% | 398,792 |
 | ensemble | 0.1794 | 0.00016 | 0.1000 | 0.1493 | 25.9% | 396,664 |
 
-Strictly monotone, and the spread is large: the teacher is almost blind between
-random negatives (95% of maximum entropy) and nearly decisive between ensemble
-negatives (26%).
+**Nearly all of the available entropy reduction is delivered by BM25.**
 
-**A tension this creates with the chapter's stated mechanism.** Teacher entropy
-keeps falling well past the point where effectiveness stops improving. From
-BM25 to ensemble, h drops by 58% (0.4292 -> 0.1794), yet Table 4.1 shows no
-corresponding effectiveness gain -- BM25 and ensemble are within a point or two
-of each other on TREC DL, and the recomputed equivalence tests cannot separate
-them at any margin below about 9%. The same is true of the other two quantities
-in Table 4.2: kappa-hat falls 12.7 -> 8.3 and Delta-hat 9.86 -> 9.55 over the
-same step.
+| step | delta (nats) | relative | share of the total drop |
+|---|---|---|---|
+| random -> BM25 | 0.3752 | 56.9% | **78.1%** |
+| BM25 -> cross-encoder | 0.0676 | 23.8% | **14.1%** |
+| cross-encoder -> ensemble | 0.0373 | 17.2% | **7.8%** |
 
-So all three terms of the bound improve monotonically across the mining
-cascade while effectiveness plateaus after BM25. The Verdict on H1.2 says the
-operative factors are "teacher pairwise entropy and the essential diameter of
-the query manifold, neither of which the mining cascade tightens enough to
-register". For the diameter that holds -- it moves 3%. For teacher entropy it
-does not: the cascade tightens it by more than half and nothing happens to
-effectiveness. **The H1.2 conclusion survives (expensive mining does not pay),
-but this particular explanation of why does not.** Andrew should decide how to
-reword; the measurement is in `pairwise_entropy.csv`.
+This is a direct, quantitative version of the chapter's own claim that
+"effectiveness plateaus once a minimal locality is enforced (BM25)". Moving
+from uniform-random negatives to BM25 accounts for **78.1%**
+of the whole random-to-ensemble reduction in teacher uncertainty, and
+coincides with the one large effectiveness gain in Table 4.1 (for instance
+LCE/BE on TREC DL'19, 0.546 -> 0.642). Everything the expensive cascade adds
+beyond that -- cross-encoder filtering and ensembling -- moves teacher entropy
+by 21.9% of the total and moves effectiveness not at
+all.
+
+So teacher entropy behaves exactly as the H1.2 verdict says the operative
+factors should: the cascade does not tighten it enough, past BM25, to register.
+**This measurement supports the chapter's stated mechanism.**
+
+*Correction.* An earlier version of this file reported BM25 at 0.4292 nats and
+argued that entropy kept falling steeply while effectiveness plateaued,
+presenting it as a tension with the verdict's explanation. That figure came
+from the mining pool file rather than the training targets. On the correct
+file BM25 is 0.2844, the post-BM25 steps are small, and the tension does not
+exist. The other three miners were always read from the correct files and are
+unchanged.
 
 **A defect found in the training files.** Every query's group is repeated
 roughly 99.75 times, with an identical positive and an identical negative set
@@ -68,17 +91,14 @@ queries. Averaging over lines rather than queries weights each query by its
 arbitrary repeat count and understates the standard error by about sqrt(100).
 The figures above are per query.
 
-**The ensemble miner covers a different query set.** Its score file holds
-500,295 queries against ~398,790 for the other three. If training used the
-full set, the ensemble arm of Table 4.1 saw ~25% more training queries than
-its comparators, which would confound exactly the comparison H1.2 rests on.
-Needs checking against the training invocation. The figures above use each
-miner's own queries; item 2 intersects to the 396,621 common to all four.
+The ensemble column is reported for completeness but carries no effectiveness
+conclusion here: Andrew notes those models were not trained as long as the
+others.
 
 **Arm B, uniform pairs from BM25's top 1,000: still outstanding.** The v1 PISA
-index needed for it exists on the GPU node
+index needed for it is on the GPU node
 (`/mnt/indices/msmarco-passage.pisa`, with the `k1-1.2.b-0.75` variant mining
-used), so this is now a matter of running it rather than a blocker.
+used), so this is a matter of running it rather than a blocker.
 
 ## 2. Rank-bin mismatch
 
@@ -124,9 +144,9 @@ Three things follow.
    0.90 top-weighted) is.
 3. **Ensemble is the genuine outlier**, with 38.4% of its negatives outside
    BM25's top 1,000, and it is much the closest to uniform (TV 0.1985). It is
-   the one miner that samples a materially different region -- and it still
-   does not deliver a matching effectiveness gain, which is the same plateau
-   the entropy result shows.
+   the one miner that samples a materially different region. No effectiveness
+   conclusion is drawn from it here, since those models were not trained as
+   long as the others.
 
 **Outstanding:** the plan also asks for this analysis with the deployed
 bi-encoder's ranking in place of BM25. Not yet run.

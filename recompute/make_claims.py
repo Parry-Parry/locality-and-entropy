@@ -23,6 +23,7 @@ RECOMPUTE = os.path.join(REPO, "recompute")
 EXTRACT = os.path.join(RECOMPUTE, "thesis_extract.txt")
 
 HOLDS_WIDER = "holds at a wider margin"
+FACTUAL = "factually wrong (not an equivalence claim)"
 FAILS = "does not hold"
 DESCRIPTIVE = "does not hold (describes the defective method)"
 
@@ -44,6 +45,17 @@ CLAIMS = [
      "Methods. States alpha = 0.05 and 'means bounded at 1%'. The code used "
      "alpha = 0.10 and a margin of 0.1% of the observed difference "
      "(AUDIT.md sections 3 and 10). Neither parameter matches."),
+    (3569, 3572, FACTUAL,
+     "Teacher architecture. States the teacher is trained 'using the ELECTRA "
+     "architecture'. Both surviving teacher checkpoints are "
+     "bert-base-uncased / BertForSequenceClassification "
+     "(checkpoints/crossencoder and checkpoints_old/crossencoder, which are "
+     "behaviourally identical). The STUDENTS are ELECTRA "
+     "(google/electra-base-discriminator), so the preceding sentence about "
+     "cross-encoder initialisation is correct; only the teacher sentence is "
+     "wrong. The teacher that produced the training targets is confirmed "
+     "present and reproduces them exactly, so this is a description error, "
+     "not a missing artefact."),
     (3630, 3631, FAILS,
      "Table 4.1 caption. '(1% bound, alpha = 0.05)' describes neither the "
      "implemented test nor the appendix definition."),
