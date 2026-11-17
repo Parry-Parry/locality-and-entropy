@@ -1,0 +1,6 @@
+# P1/P2 working data: large files fetched in batches from the cluster and
+# deleted after use. Not committed.
+recompute/runs_p1/checkpoints/
+recompute/runs_p1/candidates/
+recompute/theory/negatives/
+recompute/theory/data/
