@@ -160,10 +160,20 @@ def report(d: dict) -> str:
       "was computed and discarded, or superscripts were dropped in "
       "typesetting. Confirm which; if they were meant to appear, Table 4.3 "
       "needs a drop-in too.")
-    A("6. **Three cells are `n/a` in the thesis** (hotpotqa, Ensemble: Table "
-      "4.5 LCE, Table 4.8 RankNet and KL). Those runs appear never to have "
-      "been produced. Confirm they are genuinely missing rather than lost in "
-      "typesetting -- Step 6 can regenerate them on the cluster.")
+    A("6. **The three `n/a` cells are regenerated; P1 is complete.** "
+      "Table 4.5 BE/LCE/Ensemble/hotpotqa = **0.5810**, Table 4.8 "
+      "CE/RankNet/Ensemble/hotpotqa = **0.7191**, Table 4.8 "
+      "CE/KL/Ensemble/hotpotqa = **0.6931**, each over all 740,500 "
+      "query-document pairs. Produced with the repository's own inference "
+      "code, UNMODIFIED, on a cluster GPU node running the `implicit` conda "
+      "environment (rankers 0.0.6, the version that trained these models). "
+      "The Step 6.2 determinism gate passed 3 of 3 exactly: regenerated "
+      "nfcorpus nDCG@10 of 0.3273, 0.3422 and 0.3411 against identical "
+      "values from the committed originals, maximum difference 0.000000. "
+      "Each new value sits among its neighbours (Table 4.5 BE hotpotqa: "
+      "RankNet 0.599, marginMSE 0.599, KL 0.585; Table 4.8 CE hotpotqa: LCE "
+      "0.694, marginMSE 0.708). Andrew decides whether to publish them or "
+      "leave the cells as `n/a`.")
     A("7. **The appendix TOST definition documents the bug** rather than the "
       "intended method (AUDIT.md section 3). It must be replaced whatever "
       "margin you choose; see `dropin/appendix_tost.tex`.")

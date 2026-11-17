@@ -62,7 +62,7 @@ MINERS = ["random", "bm25", "crossencoder", "ensemble"]
 # ensemble.all.scores.json.gz
 SCORE_FILE = {
     "random": "random.scores.json.gz",
-    "bm25": "bm25.scores.json.gz",
+    "bm25": "bm25.crossencoder.scores.json.gz",
     "crossencoder": "crossencoder.scores.json.gz",
     "ensemble": "ensemble.all.scores.json.gz",
 }

@@ -95,10 +95,37 @@ The ensemble column is reported for completeness but carries no effectiveness
 conclusion here: Andrew notes those models were not trained as long as the
 others.
 
-**Arm B, uniform pairs from BM25's top 1,000: still outstanding.** The v1 PISA
-index needed for it is on the GPU node
-(`/mnt/indices/msmarco-passage.pisa`, with the `k1-1.2.b-0.75` variant mining
-used), so this is a matter of running it rather than a blocker.
+**Arm B, uniform pairs from BM25's top 1,000.** Teacher-scored directly on the
+GPU node with the surviving teacher (the same one that produced every miner's
+training targets, confirmed by `check_real_teacher.py` at mean |diff| 2e-6).
+2,000 queries, 64 documents sampled uniformly per query from the top 1,000,
+up to 200 pairs among them.
+
+    H = 0.4374 nats +/- 0.0036 (se), 63.1% of log 2
+
+Arm B closes the chain, and shows where the teacher's decisiveness actually
+comes from:
+
+| stage | H (nats) | drop | share of random -> ensemble |
+|---|---|---|---|
+| random, whole corpus | 0.6596 | -- | -- |
+| uniform over BM25 top-1000 (arm B) | 0.4374 | 0.2221 | 46.3% |
+| BM25's mined selection | 0.2844 | 0.1531 | 31.9% |
+| cross-encoder filtering | 0.2167 | 0.0676 | 14.1% |
+| ensemble | 0.1794 | 0.0373 | 7.8% |
+
+Read down the table: **restricting candidates to BM25's top 1,000 accounts for
+46.3% of the total reduction, and BM25's own selection within that
+pool a further 31.9%** -- together 78.1%. Everything the
+expensive cascade adds on top is 21.9%. The cheap lexical
+retriever is doing nearly all of the work of making the teacher decisive,
+which is the mechanism H1.2 asserts.
+
+Note on `armb_teacher_validation.csv`: that file validated against
+`bm25.scores.json.gz`, the mining pool, before the two BM25 score files were
+distinguished. Its mean |diff| of 50.2 is therefore uninformative -- it
+compares the teacher against a file no training ever used. The teacher used
+for arm B is the correct one; see `check_real_teacher.py`.
 
 ## 2. Rank-bin mismatch
 
