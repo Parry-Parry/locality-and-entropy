@@ -36,6 +36,9 @@ def load() -> dict:
         os.path.join(RECOMPUTE, "results", "table_4_3_beir_like_for_like.csv")
     )
     manifest = pd.read_csv(os.path.join(RECOMPUTE, "manifest.csv"))
+    contam = pd.read_csv(
+        os.path.join(RECOMPUTE, "results", "contaminated_cells.csv")
+    )
 
     s["grp"] = np.where(
         s["collection"].isin(["dl19", "dl20"]),
@@ -54,6 +57,7 @@ def load() -> dict:
         "t43": t43,
         "lfl": lfl,
         "manifest": manifest,
+        "contam": contam,
     }
 
 
@@ -68,6 +72,7 @@ def report(d: dict) -> str:
     s, repro, audit = d["s"], d["repro"], d["audit"]
     skipped, claims = d["skipped"], d["claims"]
     t43, lfl, manifest = d["t43"], d["lfl"], d["manifest"]
+    contam = d["contam"]
 
     n_all = len(s)
     claimed = int(s["original_claim"].sum())
@@ -111,16 +116,34 @@ def report(d: dict) -> str:
 
     # ---------------------------------------------------------------- 1
     A("## 1. Needs Andrew\n")
-    A("1. **The LaTeX source is missing.** Only the PDF was available, so "
+    A("1. **Four published effectiveness values in Table 4.1 are wrong, and "
+      "fixing them removes the one visible counter-example to H1.2.** The "
+      "marginMSE / BM25 / cross-encoder cell pools two different runs: "
+      "`parse_run_meta` matches the substring `bm25`, so "
+      "`cat-MarginMSE-bm25-graph-16-INT` was labelled domain=BM25 and averaged "
+      "in with the intended `cat-MarginMSE-bm25.16-16`. Corrected: "
+      + "; ".join(
+          f"{r['collection']} {r['metric']} {r['as_published']:.3f} -> "
+          f"{r['intended_run_only']:.3f}"
+          for _, r in contam.iterrows()
+      )
+      + ". In print this row is the only marginMSE cell far below its "
+      "neighbours; corrected, BM25 is level with Cross-Encoder and Ensemble on "
+      "DL'19 and the best of the four on DL'20. This is a data-selection bug, "
+      "not a statistical one, and it is the one change here that makes H1.2 "
+      "look *better*. Confirm the `-graph-16-INT` run is indeed a different "
+      "system and not an intended BM25 variant -- everything downstream "
+      "assumes it is.")
+    A("2. **The LaTeX source is missing.** Only the PDF was available, so "
       "`claims.csv` cites line numbers in `recompute/thesis_extract.txt`, not "
       "`file:line` in the thesis source. The drop-in tables carry a "
       "**placeholder `\\label`** (`tab:ch4-main-results`) because the real one "
       "could not be read. Send the `.tex` tree and both are a five-minute fix.")
-    A("2. **Which margin do you want to stand behind?** The pre-stated 1% "
+    A("3. **Which margin do you want to stand behind?** The pre-stated 1% "
       f"margin leaves {eq1} of {n_all} comparisons equivalent. Drop-in tables "
       "are provided at 1%, 5% and 10% so you can choose; see section 3. I "
       "recommend 10% with the caveat in section 6, and would not publish 1%.")
-    A("3. **Table 4.3's BEIR column mixes two aggregations and two "
+    A("4. **Table 4.3's BEIR column mixes two aggregations and two "
       "collection sets, and this reverses a stated conclusion.** The "
       "\"Original\" row is a micro-average over 24 BEIR collections; the "
       "quartile rows are macro-averages over the 8 the quartile runs cover. "
@@ -132,19 +155,19 @@ def report(d: dict) -> str:
       "the baseline instead. This is independent of the TOST bug and needs a "
       "decision: restate the baseline, or restrict the column to the 8 "
       "collections. See section 6.")
-    A("4. **Table 4.3 has no equivalence superscripts at all** in the thesis, "
+    A("5. **Table 4.3 has no equivalence superscripts at all** in the thesis, "
       "yet `ent_intermediate/tost_cat_*.tsv` exists. Either the entropy TOST "
       "was computed and discarded, or superscripts were dropped in "
       "typesetting. Confirm which; if they were meant to appear, Table 4.3 "
       "needs a drop-in too.")
-    A("5. **Three cells are `n/a` in the thesis** (hotpotqa, Ensemble: Table "
+    A("6. **Three cells are `n/a` in the thesis** (hotpotqa, Ensemble: Table "
       "4.5 LCE, Table 4.8 RankNet and KL). Those runs appear never to have "
       "been produced. Confirm they are genuinely missing rather than lost in "
       "typesetting -- Step 6 can regenerate them on the cluster.")
-    A("6. **The appendix TOST definition documents the bug** rather than the "
+    A("7. **The appendix TOST definition documents the bug** rather than the "
       "intended method (AUDIT.md section 3). It must be replaced whatever "
       "margin you choose; see `dropin/appendix_tost.tex`.")
-    A("7. **Connected-component labelling is retained** on your instruction "
+    A("8. **Connected-component labelling is retained** on your instruction "
       "that table shape stay identical. It asserts more than the pairwise "
       "tests support (PROTOCOL.md, final section). Flagging once more because "
       "it is a presentational claim you may not want to keep making.\n")
@@ -232,9 +255,18 @@ def report(d: dict) -> str:
     A("## 5. Reproduction\n")
     A(f"- **{len(diffs)} reported cells checked; {over} exceed the 0.001 "
       f"threshold; maximum |difference| {diffs.max():.6f}.**")
-    A("- The effectiveness numbers in Tables 4.1 and 4.4-4.9 reproduce "
-      "exactly from the committed per-query scores. **Only the equivalence "
-      "superscripts are wrong** -- no effectiveness value needs to change.")
+    unex = int(((repro["abs_diff"] > 0.001) & (repro["known_reason"].fillna("") == "")).sum())
+    A(f"- Of those, {int((diffs > 0.001).sum())} exceed the threshold and all "
+      f"have a documented cause ({unex} unexplained): they are the four "
+      "contaminated marginMSE / BM25 / cross-encoder cells in section 7, where "
+      "the recomputed value is deliberately the corrected one.")
+    A("- Every other effectiveness number in Tables 4.1 and 4.4-4.9 reproduces "
+      "exactly. Apart from those four cells, **only the equivalence "
+      "superscripts change**.")
+    A("- Independently re-evaluated from the TREC run files with `ir_measures` "
+      "against `ir_datasets` qrels (`results/verify_from_runs.csv`): 62 of 64 "
+      "TREC DL cells agree to within 1e-6 per query. The two that do not are "
+      "the contaminated cells -- which is how the contamination was found.")
     n_t43 = len(pd.read_csv(os.path.join(RECOMPUTE, "reported", "table_4_3.csv")))
     t43_bad = int((t43["abs_diff"] > 0.001).sum())
     A(f"- Table 4.3: all {len(t43)} cells reproduce ({t43_bad} above "
@@ -285,7 +317,29 @@ def report(d: dict) -> str:
       "The overfitting interpretation rests on the artefact, not on the data. "
       "Note this is a *measurement* problem, not an equivalence-testing one: "
       "it would survive any fix to the TOST code.\n")
-    A("## 7. Caveats\n")
+    A("## 7. Contaminated cells in Table 4.1\n")
+    A("`tables/evaluate_main.py` assigns a run's sampling domain by substring "
+      "match (`parse_run_meta`, lines 60-70):\n")
+    A("```python\n    for tag, name in [\n        (\"random\",\"Random\"), "
+      "(\"ensemble\",\"Ensemble\"),\n        (\"crossencoder\",\"Cross-Encoder\"), "
+      "(\"bm25\",\"BM25\")\n    ]:\n        if tag in base.lower():\n```\n")
+    A("`cat-MarginMSE-bm25-graph-16-INT` contains `bm25`, so it is labelled "
+      "`domain=BM25` and averaged into the BM25 cell with the intended "
+      "`cat-MarginMSE-bm25.16-16`. Only this one pair of cells is affected: "
+      "across TREC DL and all 24 BEIR collections, these are the only 2 of 829 "
+      "(loss, arch, domain) cells that pool more than one run.\n")
+    A("| collection | metric | as published | intended run only | contaminating run | correction |")
+    A("|---|---|---|---|---|---|")
+    for _, r in contam.iterrows():
+        A(f"| {r['collection']} | {r['metric']} | {r['as_published']:.3f} | "
+          f"{r['intended_run_only']:.3f} | {r['contaminating_run']:.3f} | "
+          f"{r['correction']:+.3f} |")
+    A("")
+    A("The drop-in tables use the corrected values. Note the direction: the "
+      "published dip made BM25-mined negatives look clearly worse than the "
+      "expensive miners under marginMSE, which is the one place in Table 4.1 "
+      "that visibly contradicts H1.2. It was an averaging artefact.\n")
+    A("## 8. Caveats\n")
     A("**Statistical power is the dominant issue.** TREC DL 2019 has "
       f"{int(dl19['n'].median())} queries and TREC DL 2020 has "
       f"{int(dl20['n'].median())}. From the observed per-query variance, the "
@@ -319,7 +373,7 @@ def report(d: dict) -> str:
       "pairwise truth is in `results/summary.csv`.\n")
 
     # ---------------------------------------------------------------- 7
-    A("## 8. Files\n")
+    A("## 9. Files\n")
     A("| path | what |")
     A("|---|---|")
     for path, what in [
@@ -335,6 +389,8 @@ def report(d: dict) -> str:
         ("claims.csv", "every equivalence claim in the thesis, with status"),
         ("manifest.csv", "Step 1 inventory: every cell -> run file, qrels"),
         ("results/table_4_3_*.csv", "Table 4.3 reproduction + like-for-like BEIR"),
+        ("results/contaminated_cells.csv", "the four corrected Table 4.1 values"),
+        ("results/verify_from_runs.csv", "per-query re-evaluation from run files"),
         ("dropin/", "full replacement tables and paragraphs"),
     ]:
         A(f"| `{path}` | {what} |")
@@ -345,6 +401,8 @@ def report(d: dict) -> str:
       "python recompute/recompute_tost.py\n"
       "python recompute/make_figures.py\n"
       "python recompute/table_4_3_check.py\n"
+      "python recompute/contaminated_cells.py\n"
+      "python recompute/verify_from_runs.py\n"
       "python recompute/make_manifest.py\n"
       "python recompute/make_claims.py\n"
       "python recompute/make_dropins.py\n"

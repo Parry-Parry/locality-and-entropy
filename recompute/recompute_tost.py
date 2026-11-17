@@ -67,11 +67,18 @@ def holm(pvals: np.ndarray) -> np.ndarray:
     return adjusted
 
 
+# `cat-MarginMSE-bm25-graph-16-INT` is a different system that parse_run_meta
+# mislabels as domain=BM25 because its name contains "bm25", pooling it into the
+# marginMSE/BM25 cross-encoder cell. Excluded. See recompute/contaminated_cells.py.
+CONTAMINANT = "graph-16-INT"
+
+
 def load_perquery(group: str) -> pd.DataFrame:
     path = os.path.join(REPO, "main_intermediate", f"perquery_{group}.tsv.gz")
     df = pd.read_csv(path, sep="\t", low_memory=False)
     # CE-Teacher is not a miner comparison; the original short-circuits it
-    return df[df["arch"] != "CE-Teacher"].copy()
+    df = df[df["arch"] != "CE-Teacher"]
+    return df[~df["name"].str.contains(CONTAMINANT, na=False)].copy()
 
 
 def save_per_query(group: str, df: pd.DataFrame) -> None:
@@ -205,6 +212,18 @@ def reproduction_check(reported: pd.DataFrame, perq: dict) -> pd.DataFrame:
         ]
         recomputed = sel["value"].mean() if len(sel) else np.nan
         reported_value = r["reported_value"]
+        known = (
+            "published cell pools the mislabelled cat-MarginMSE-bm25-graph-16-"
+            "INT run; recomputed from the intended run only "
+            "(see recompute/contaminated_cells.py)"
+            if (
+                r["loss"] == "marginMSE"
+                and r["architecture"] == "CE"
+                and r["miner"] == "BM25"
+                and group in ("dl19", "dl20")
+            )
+            else ""
+        )
         rows.append(
             {
                 "cell": f"T{r['table']}|{group}|{r['loss']}|{r['architecture']}"
@@ -214,6 +233,7 @@ def reproduction_check(reported: pd.DataFrame, perq: dict) -> pd.DataFrame:
                 "abs_diff": abs(recomputed - reported_value)
                 if pd.notna(recomputed) and pd.notna(reported_value)
                 else np.nan,
+                "known_reason": known,
             }
         )
     return pd.DataFrame(rows)
@@ -327,7 +347,9 @@ def main() -> None:
               f"  ({100.0 * n / len(summary):5.1f}%)")
     ok = repro["abs_diff"].dropna()
     print(f"reproduction cells compared       : {len(ok)}")
-    print(f"  abs_diff > 0.001                : {int((ok > 0.001).sum())}")
+    unexplained = repro[(repro["abs_diff"] > 0.001) & (repro["known_reason"] == "")]
+    print(f"  abs_diff > 0.001                : {int((ok > 0.001).sum())}"
+          f"  (unexplained: {len(unexplained)})")
     print(f"  max abs_diff                    : {ok.max():.6f}")
     print("=" * 68)
 

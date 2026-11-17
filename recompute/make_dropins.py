@@ -137,6 +137,8 @@ def main() -> None:
             low_memory=False,
         )
         df = df[df["arch"] != "CE-Teacher"]
+        # see recompute/contaminated_cells.py
+        df = df[~df["name"].str.contains("graph-16-INT", na=False)]
         g = (
             df.groupby(["loss", "arch", "domain", "measure"])["value"]
             .mean()

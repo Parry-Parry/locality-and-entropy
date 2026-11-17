@@ -1,0 +1,5 @@
+collection,metric,as_published,intended_run_only,contaminating_run,correction,intended_run,contaminant
+dl19,nDCG@10,0.601,0.7112039660437025,0.49172631425419744,0.11020396604370253,msmarco_passage_trec_dl_2019_judged_cat-MarginMSE-bm25.16-16,msmarco_passage_trec_dl_2019_judged_cat-MarginMSE-bm25-graph-16-INT
+dl19,AP(rel=2),0.39,0.480007871158696,0.2992428716813007,0.09000787115869596,msmarco_passage_trec_dl_2019_judged_cat-MarginMSE-bm25.16-16,msmarco_passage_trec_dl_2019_judged_cat-MarginMSE-bm25-graph-16-INT
+dl20,nDCG@10,0.607,0.7387786005109404,0.4755498679561832,0.13177860051094037,msmarco_passage_trec_dl_2020_judged_cat-MarginMSE-bm25.16-16,msmarco_passage_trec_dl_2020_judged_cat-MarginMSE-bm25-graph-16-INT
+dl20,AP(rel=2),0.4,0.5099576541970997,0.29098547466752983,0.10995765419709969,msmarco_passage_trec_dl_2020_judged_cat-MarginMSE-bm25.16-16,msmarco_passage_trec_dl_2020_judged_cat-MarginMSE-bm25-graph-16-INT
