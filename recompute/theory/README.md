@@ -20,31 +20,45 @@ training negatives and are in progress.
 
 ## 1. Pairwise teacher entropy (Bradley-Terry)
 
-`python recompute/theory/pairwise_entropy.py --miner <name>`
+`python recompute/theory/pairwise_entropy.py --all`
 
 h(sigma(g(x) - g(x'))) in nats, averaged over pairs within a query and then
 over queries. h -> 0 means the teacher is certain which document is better;
 h -> log 2 = 0.6931 means it cannot tell them apart.
 
-**Arm A, pairs from each miner's own training negatives** (no GPU needed: the
-teacher scores are already stored in `data/<miner>.scores.json.gz`):
+**Arm A, pairs from each miner's own training negatives.** No GPU or teacher
+inference needed: the teacher scores are already stored in
+`data/<miner>.scores.json.gz`.
 
 | miner | mean h (nats) | se | sd | median | % of log 2 | queries |
 |---|---|---|---|---|---|---|
 | random | 0.6596 | 0.00011 | 0.0703 | 0.6887 | 95.2% | 398,792 |
 | BM25 | 0.4292 | 0.00019 | 0.1182 | 0.4318 | 61.9% | 397,734 |
-| cross-encoder | pending | | | | | |
-| ensemble | pending | | | | | |
+| cross-encoder | 0.2167 | 0.00020 | 0.1269 | 0.1745 | 31.3% | 398,792 |
+| ensemble | 0.1794 | 0.00016 | 0.1000 | 0.1493 | 25.9% | 396,664 |
 
-The gap is large and in the direction the theory needs: against random
-negatives the teacher is almost blind (95% of maximum entropy), while against
-BM25-mined negatives it is far more decisive (62%). A teacher that cannot
-separate a pair transmits almost no gradient signal, so this is the mechanism
-by which BM25 mining buys most of what expensive mining buys.
+Strictly monotone, and the spread is large: the teacher is almost blind between
+random negatives (95% of maximum entropy) and nearly decisive between ensemble
+negatives (26%).
 
-cross-encoder and ensemble are not yet computed: the cluster host became
-unreachable mid-transfer, so `crossencoder.16.jsonl.gz` and
-`ensemble.16.jsonl.gz` are not local.
+**A tension this creates with the chapter's stated mechanism.** Teacher entropy
+keeps falling well past the point where effectiveness stops improving. From
+BM25 to ensemble, h drops by 58% (0.4292 -> 0.1794), yet Table 4.1 shows no
+corresponding effectiveness gain -- BM25 and ensemble are within a point or two
+of each other on TREC DL, and the recomputed equivalence tests cannot separate
+them at any margin below about 9%. The same is true of the other two quantities
+in Table 4.2: kappa-hat falls 12.7 -> 8.3 and Delta-hat 9.86 -> 9.55 over the
+same step.
+
+So all three terms of the bound improve monotonically across the mining
+cascade while effectiveness plateaus after BM25. The Verdict on H1.2 says the
+operative factors are "teacher pairwise entropy and the essential diameter of
+the query manifold, neither of which the mining cascade tightens enough to
+register". For the diameter that holds -- it moves 3%. For teacher entropy it
+does not: the cascade tightens it by more than half and nothing happens to
+effectiveness. **The H1.2 conclusion survives (expensive mining does not pay),
+but this particular explanation of why does not.** Andrew should decide how to
+reword; the measurement is in `pairwise_entropy.csv`.
 
 **A defect found in the training files.** Every query's group is repeated
 roughly 99.75 times, with an identical positive and an identical negative set
@@ -54,21 +68,68 @@ queries. Averaging over lines rather than queries weights each query by its
 arbitrary repeat count and understates the standard error by about sqrt(100).
 The figures above are per query.
 
-**Arm B, uniform pairs from BM25's top 1,000: not computed.** It needs a BM25
-top-1000 ranking over the 398k training queries. None is stored, and mining
-retrieved on the fly from a PISA index
-(`src/implicit/data_processing/mine_negatives.py`, `PisaIndex.from_dataset`).
-`pyterrier-pisa` publishes linux x86_64 wheels only -- no macOS, no arm64 --
-and the only PISA index on the cluster is `msmarco-passage-v2-dedup`, a
-different corpus from the v1 passage collection used for training. A
-substitute BM25 would produce different rankings, which defeats the purpose.
+**The ensemble miner covers a different query set.** Its score file holds
+500,295 queries against ~398,790 for the other three. If training used the
+full set, the ensemble arm of Table 4.1 saw ~25% more training queries than
+its comparators, which would confound exactly the comparison H1.2 rests on.
+Needs checking against the training invocation. The figures above use each
+miner's own queries; item 2 intersects to the 396,621 common to all four.
+
+**Arm B, uniform pairs from BM25's top 1,000: still outstanding.** The v1 PISA
+index needed for it exists on the GPU node
+(`/mnt/indices/msmarco-passage.pisa`, with the `k1-1.2.b-0.75` variant mining
+used), so this is now a matter of running it rather than a blocker.
 
 ## 2. Rank-bin mismatch
 
-**Blocked, same cause as arm B above.** The analysis is defined in terms of
-each negative's rank within BM25's top 1,000, so it needs the same BM25
-ranking. Deferred to a linux host with `pyterrier_pisa` and a v1
-`msmarco-passage` index.
+`python recompute/theory/rank_bins.py --n-queries 2000`
+
+Each miner's training negatives, binned by their rank in BM25's top 1,000 for
+the same query (">1000" if absent). BM25 is the index and parameters the mining
+itself used (`PisaIndex(...).bm25(k1=1.2, b=0.75)` on
+`/mnt/indices/msmarco-passage.pisa`). 2,000 queries sampled with seed 20260101
+from the 396,621 common to all four miners; 30,000 negatives per miner.
+
+| miner | 1-10 | 11-100 | 101-1000 | >1000 |
+|---|---|---|---|---|
+| random | 0.0000 | 0.0000 | 0.0001 | 0.9999 |
+| BM25 | 0.0503 | 0.4489 | 0.4940 | 0.0068 |
+| cross-encoder | 0.0842 | 0.5329 | 0.3755 | 0.0074 |
+| ensemble | 0.0626 | 0.2389 | 0.3143 | 0.3842 |
+
+kappa = max over bins of mu/pi, TV = half the L1 distance, against two target
+distributions mu: uniform over the four bins, and top-weighted
+(0.4, 0.3, 0.2, 0.1):
+
+| miner | kappa (uniform) | TV (uniform) | kappa (top-weighted) | TV (top-weighted) |
+|---|---|---|---|---|
+| random | inf | 0.7499 | inf | 0.8999 |
+| BM25 | 36.59 | 0.4429 | 14.63 | 0.4429 |
+| cross-encoder | 33.78 | 0.4084 | 13.51 | 0.4084 |
+| ensemble | 3.99 | 0.1985 | 6.39 | 0.3985 |
+
+Three things follow.
+
+1. **Cross-encoder mining barely moves the sampling region away from BM25's.**
+   Their bin profiles are close (TV against uniform 0.4084 vs 0.4429, a
+   difference of 0.035) and both place about 99.3% of negatives inside BM25's
+   top 1,000. The expensive miner is drawing from nearly the same place the
+   cheap one does -- a direct, distributional mechanism for H1.2 that does not
+   depend on the entropy argument above. What the cross-encoder changes is
+   *which* documents it picks within a similar rank band, shifting mass from
+   101-1000 into 11-100.
+2. **Random negatives are essentially disjoint from BM25's candidates**
+   (99.99% beyond rank 1,000), and kappa is infinite because two bins are
+   empty. Reporting kappa for random is not meaningful; TV (0.75 uniform,
+   0.90 top-weighted) is.
+3. **Ensemble is the genuine outlier**, with 38.4% of its negatives outside
+   BM25's top 1,000, and it is much the closest to uniform (TV 0.1985). It is
+   the one miner that samples a materially different region -- and it still
+   does not deliver a matching effectiveness gain, which is the same plateau
+   the entropy result shows.
+
+**Outstanding:** the plan also asks for this analysis with the deployed
+bi-encoder's ranking in place of BM25. Not yet run.
 
 ## 3. Diameter metric
 
