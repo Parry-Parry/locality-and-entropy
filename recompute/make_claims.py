@@ -47,6 +47,12 @@ CLAIMS = [
     (3630, 3631, FAILS,
      "Table 4.1 caption. '(1% bound, alpha = 0.05)' describes neither the "
      "implemented test nor the appendix definition."),
+    (3744, 3746, FAILS,
+     "Section 4.3 entropy discussion. 'all cases degrade out-of-domain ... "
+     "induces overfitting' compares a 24-collection micro-averaged baseline "
+     "against 8-collection macro-averaged quartile rows. Like-for-like, 5 of "
+     "8 quartile rows improve on the baseline; only Outlier degrades. See "
+     "REPORT.md section 6. Independent of the TOST defect."),
     (3755, 3757, HOLDS_WIDER,
      "Discussion. 'statistically equivalent ... under all semi-supervised "
      "criteria tested' holds for no margin uniformly; at 10% agreement with "

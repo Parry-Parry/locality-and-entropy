@@ -29,6 +29,13 @@ def load() -> dict:
         os.path.join(RECOMPUTE, "results", "skipped_comparisons.csv")
     )
     claims = pd.read_csv(os.path.join(RECOMPUTE, "claims.csv"))
+    t43 = pd.read_csv(
+        os.path.join(RECOMPUTE, "results", "table_4_3_reproduction.csv")
+    )
+    lfl = pd.read_csv(
+        os.path.join(RECOMPUTE, "results", "table_4_3_beir_like_for_like.csv")
+    )
+    manifest = pd.read_csv(os.path.join(RECOMPUTE, "manifest.csv"))
 
     s["grp"] = np.where(
         s["collection"].isin(["dl19", "dl20"]),
@@ -44,6 +51,9 @@ def load() -> dict:
         "audit": audit,
         "skipped": skipped,
         "claims": claims,
+        "t43": t43,
+        "lfl": lfl,
+        "manifest": manifest,
     }
 
 
@@ -57,6 +67,7 @@ def n_required(sub: pd.DataFrame, eps: float) -> float:
 def report(d: dict) -> str:
     s, repro, audit = d["s"], d["repro"], d["audit"]
     skipped, claims = d["skipped"], d["claims"]
+    t43, lfl, manifest = d["t43"], d["lfl"], d["manifest"]
 
     n_all = len(s)
     claimed = int(s["original_claim"].sum())
@@ -109,19 +120,31 @@ def report(d: dict) -> str:
       f"margin leaves {eq1} of {n_all} comparisons equivalent. Drop-in tables "
       "are provided at 1%, 5% and 10% so you can choose; see section 3. I "
       "recommend 10% with the caveat in section 6, and would not publish 1%.")
-    A("3. **Table 4.3 has no equivalence superscripts at all** in the thesis, "
+    A("3. **Table 4.3's BEIR column mixes two aggregations and two "
+      "collection sets, and this reverses a stated conclusion.** The "
+      "\"Original\" row is a micro-average over 24 BEIR collections; the "
+      "quartile rows are macro-averages over the 8 the quartile runs cover. "
+      "Section 4.3 reads down that column and concludes \"all cases degrade "
+      "out-of-domain ... induces overfitting\". Restating the baseline on the "
+      "same 8 collections with the same aggregation, "
+      f"{int((lfl[lfl['row'] != 'Original']['delta_vs_baseline'] > 0).sum())} "
+      f"of {int((lfl['row'] != 'Original').sum())} quartile rows IMPROVE on "
+      "the baseline instead. This is independent of the TOST bug and needs a "
+      "decision: restate the baseline, or restrict the column to the 8 "
+      "collections. See section 6.")
+    A("4. **Table 4.3 has no equivalence superscripts at all** in the thesis, "
       "yet `ent_intermediate/tost_cat_*.tsv` exists. Either the entropy TOST "
       "was computed and discarded, or superscripts were dropped in "
       "typesetting. Confirm which; if they were meant to appear, Table 4.3 "
       "needs a drop-in too.")
-    A("4. **Three cells are `n/a` in the thesis** (hotpotqa, Ensemble: Table "
+    A("5. **Three cells are `n/a` in the thesis** (hotpotqa, Ensemble: Table "
       "4.5 LCE, Table 4.8 RankNet and KL). Those runs appear never to have "
       "been produced. Confirm they are genuinely missing rather than lost in "
       "typesetting -- Step 6 can regenerate them on the cluster.")
-    A("5. **The appendix TOST definition documents the bug** rather than the "
+    A("6. **The appendix TOST definition documents the bug** rather than the "
       "intended method (AUDIT.md section 3). It must be replaced whatever "
       "margin you choose; see `dropin/appendix_tost.tex`.")
-    A("6. **Connected-component labelling is retained** on your instruction "
+    A("7. **Connected-component labelling is retained** on your instruction "
       "that table shape stay identical. It asserts more than the pairwise "
       "tests support (PROTOCOL.md, final section). Flagging once more because "
       "it is a presentational claim you may not want to keep making.\n")
@@ -213,9 +236,15 @@ def report(d: dict) -> str:
       "exactly from the committed per-query scores. **Only the equivalence "
       "superscripts are wrong** -- no effectiveness value needs to change.")
     n_t43 = len(pd.read_csv(os.path.join(RECOMPUTE, "reported", "table_4_3.csv")))
-    A(f"- Not checked: the {n_t43} Table 4.3 cells, which derive "
-      "from `ent_intermediate/` rather than `main_intermediate/`, and the "
-      "three `n/a` cells.")
+    t43_bad = int((t43["abs_diff"] > 0.001).sum())
+    A(f"- Table 4.3: all {len(t43)} cells reproduce ({t43_bad} above "
+      "threshold) -- but only once each column is read with the convention it "
+      "was actually computed under; see section 6.")
+    A(f"- Inventory (`manifest.csv`): "
+      f"{int((manifest['status'] == 'found').sum())} of {len(manifest)} cells "
+      "resolve to a run file on disk. The "
+      f"{int((manifest['status'] != 'found').sum())} that do not are exactly "
+      "the cells the thesis prints as `n/a`.")
     A(f"- `{len(skipped)}` comparisons were skipped, all for "
       "`baseline mean is 0`: they are `AP(rel=2)` on BEIR, whose qrels are "
       "mostly binary, so AP at relevance grade 2 is identically zero. This is "
@@ -226,7 +255,37 @@ def report(d: dict) -> str:
       "BEIR, but the column is meaningless in the intermediate files.\n")
 
     # ---------------------------------------------------------------- 6
-    A("## 6. Caveats\n")
+    A("## 6. Table 4.3: BEIR aggregation inconsistency\n")
+    A("Table 4.3 reproduces exactly, but only under three different "
+      "conventions within one table:\n")
+    A("| column | aggregation | collections |")
+    A("|---|---|---|")
+    for used, sub in t43.groupby("aggregation_used"):
+        A(f"| {', '.join(sorted(set(sub['collection'])))} | {used} | "
+          f"{sorted(set(sub['n_collections']))[0]} |")
+    A("")
+    A("The second and third rows above occupy **the same BEIR column of the "
+      "same table**. The baseline is a micro-average over 24 collections; the "
+      "quartile rows are macro-averages over 8. Restating the baseline "
+      "like-for-like:\n")
+    A("| loss | row | as printed | like-for-like | delta vs baseline |")
+    A("|---|---|---|---|---|")
+    for _, r in lfl.iterrows():
+        delta = "--" if r["row"] == "Original" else f"{r['delta_vs_baseline']:+.3f}"
+        A(f"| {r['loss']} | {r['row']} | {r['as_printed']:.3f} | "
+          f"{r['like_for_like']:.3f} | {delta} |")
+    A("")
+    n_imp = int((lfl[lfl["row"] != "Original"]["delta_vs_baseline"] > 0).sum())
+    n_tot = int((lfl["row"] != "Original").sum())
+    A(f"As printed, 0 of {n_tot} quartile rows beat the baseline, supporting "
+      "the thesis's \"all cases degrade out-of-domain\". Like-for-like, "
+      f"**{n_imp} of {n_tot} improve**; only the Outlier subset degrades "
+      "materially (LCE "
+      f"{lfl[(lfl['loss'] == 'LCE') & (lfl['row'] == 'Outlier')]['delta_vs_baseline'].iloc[0]:+.3f}). "
+      "The overfitting interpretation rests on the artefact, not on the data. "
+      "Note this is a *measurement* problem, not an equivalence-testing one: "
+      "it would survive any fix to the TOST code.\n")
+    A("## 7. Caveats\n")
     A("**Statistical power is the dominant issue.** TREC DL 2019 has "
       f"{int(dl19['n'].median())} queries and TREC DL 2020 has "
       f"{int(dl20['n'].median())}. From the observed per-query variance, the "
@@ -260,7 +319,7 @@ def report(d: dict) -> str:
       "pairwise truth is in `results/summary.csv`.\n")
 
     # ---------------------------------------------------------------- 7
-    A("## 7. Files\n")
+    A("## 8. Files\n")
     A("| path | what |")
     A("|---|---|")
     for path, what in [
@@ -274,6 +333,8 @@ def report(d: dict) -> str:
         ("results/skipped_comparisons.csv", "skipped, with reasons"),
         ("figures/", "eps* dot-and-CI plots, PDF and PNG"),
         ("claims.csv", "every equivalence claim in the thesis, with status"),
+        ("manifest.csv", "Step 1 inventory: every cell -> run file, qrels"),
+        ("results/table_4_3_*.csv", "Table 4.3 reproduction + like-for-like BEIR"),
         ("dropin/", "full replacement tables and paragraphs"),
     ]:
         A(f"| `{path}` | {what} |")
@@ -283,6 +344,8 @@ def report(d: dict) -> str:
       "python recompute/audit_evidence.py\n"
       "python recompute/recompute_tost.py\n"
       "python recompute/make_figures.py\n"
+      "python recompute/table_4_3_check.py\n"
+      "python recompute/make_manifest.py\n"
       "python recompute/make_claims.py\n"
       "python recompute/make_dropins.py\n"
       "python recompute/make_report.py\n```\n")
