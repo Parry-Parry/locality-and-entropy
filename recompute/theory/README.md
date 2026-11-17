@@ -9,14 +9,66 @@ training negatives and are in progress.
 
 | item | what | status |
 |---|---|---|
-| 1 | pairwise teacher entropy (Bradley-Terry) | in progress (GPU) |
-| 2 | rank-bin mismatch | in progress (needs training negatives) |
+| 1 | pairwise teacher entropy (Bradley-Terry) | arm A: 2 of 4 miners done; arm B blocked |
+| 2 | rank-bin mismatch | blocked -- needs a linux box with a v1 PISA index |
 | 3 | diameter metric | **done** |
 | 4 | kappa-hat summary | **done** |
 | 5 | loss definitions | **done** |
 | 6 | Table 7.10 | **done** |
 
 ---
+
+## 1. Pairwise teacher entropy (Bradley-Terry)
+
+`python recompute/theory/pairwise_entropy.py --miner <name>`
+
+h(sigma(g(x) - g(x'))) in nats, averaged over pairs within a query and then
+over queries. h -> 0 means the teacher is certain which document is better;
+h -> log 2 = 0.6931 means it cannot tell them apart.
+
+**Arm A, pairs from each miner's own training negatives** (no GPU needed: the
+teacher scores are already stored in `data/<miner>.scores.json.gz`):
+
+| miner | mean h (nats) | se | sd | median | % of log 2 | queries |
+|---|---|---|---|---|---|---|
+| random | 0.6596 | 0.00011 | 0.0703 | 0.6887 | 95.2% | 398,792 |
+| BM25 | 0.4292 | 0.00019 | 0.1182 | 0.4318 | 61.9% | 397,734 |
+| cross-encoder | pending | | | | | |
+| ensemble | pending | | | | | |
+
+The gap is large and in the direction the theory needs: against random
+negatives the teacher is almost blind (95% of maximum entropy), while against
+BM25-mined negatives it is far more decisive (62%). A teacher that cannot
+separate a pair transmits almost no gradient signal, so this is the mechanism
+by which BM25 mining buys most of what expensive mining buys.
+
+cross-encoder and ensemble are not yet computed: the cluster host became
+unreachable mid-transfer, so `crossencoder.16.jsonl.gz` and
+`ensemble.16.jsonl.gz` are not local.
+
+**A defect found in the training files.** Every query's group is repeated
+roughly 99.75 times, with an identical positive and an identical negative set
+each time (verified for qid 400296: 90 instances whose negative sets union to
+exactly 15 documents). `random.16.jsonl.gz` holds 39,780,811 lines for 398,792
+queries. Averaging over lines rather than queries weights each query by its
+arbitrary repeat count and understates the standard error by about sqrt(100).
+The figures above are per query.
+
+**Arm B, uniform pairs from BM25's top 1,000: not computed.** It needs a BM25
+top-1000 ranking over the 398k training queries. None is stored, and mining
+retrieved on the fly from a PISA index
+(`src/implicit/data_processing/mine_negatives.py`, `PisaIndex.from_dataset`).
+`pyterrier-pisa` publishes linux x86_64 wheels only -- no macOS, no arm64 --
+and the only PISA index on the cluster is `msmarco-passage-v2-dedup`, a
+different corpus from the v1 passage collection used for training. A
+substitute BM25 would produce different rankings, which defeats the purpose.
+
+## 2. Rank-bin mismatch
+
+**Blocked, same cause as arm B above.** The analysis is defined in terms of
+each negative's rank within BM25's top 1,000, so it needs the same BM25
+ranking. Deferred to a linux host with `pyterrier_pisa` and a v1
+`msmarco-passage` index.
 
 ## 3. Diameter metric
 
