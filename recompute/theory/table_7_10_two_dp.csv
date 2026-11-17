@@ -1,0 +1,16 @@
+retriever,scheme,position,generator,metric,value,delta,implied_baseline
+BM25,Abs,Before,GPT-3.5,rr,0.619,+0.14,0.479
+BM25,Abs,Middle,GPT-3.5,rr,0.616,+0.11,0.506
+BM25,Abs,After,GPT-3.5,rr,0.616,+0.11,0.506
+BM25,Rel,Before,GPT-3.5,rr,0.619,+0.14,0.479
+BM25,Rel,After,GPT-3.5,rr,0.616,+0.11,0.506
+monoT5,Abs,Before,GPT-3.5,ndcg,0.634,+0.19,0.444
+monoT5,Abs,Before,Llama-2,ndcg,0.629,+0.15,0.479
+monoT5,Rel,Before,GPT-3.5,ndcg,0.634,+0.19,0.444
+monoT5,Rel,Before,Llama-2,ndcg,0.629,+0.15,0.479
+TAS-B,Abs,Before,Llama-2,ndcg,0.662,+0.19,0.472
+TAS-B,Abs,Before,Llama-2,rr,0.879,+0.17,0.709
+TAS-B,Abs,Before,Static,ndcg,0.662,+0.18,0.482
+TAS-B,Rel,Before,Llama-2,ndcg,0.662,+0.19,0.472
+TAS-B,Rel,Before,Llama-2,rr,0.879,+0.17,0.709
+TAS-B,Rel,Before,Static,ndcg,0.662,+0.18,0.482
