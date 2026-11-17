@@ -92,6 +92,14 @@ def kappa_tv(pi: np.ndarray, mu: np.ndarray) -> tuple[float, float]:
 def main() -> None:
     ent = pd.read_csv(os.path.join(HERE, "pairwise_entropy.csv")).set_index("miner")
     rb = pd.read_csv(os.path.join(HERE, "rank_bins_bm25.csv")).set_index("miner")
+    # finest available partition of the rank axis; the four-bin figure is only
+    # a lower bound on sup dmu/dpi
+    fine_path = os.path.join(HERE, "kappa_fine.csv")
+    fine = None
+    if os.path.exists(fine_path):
+        f = pd.read_csv(fine_path)
+        fine = (f[f.n_cells == f.n_cells.max()]
+                .set_index("miner")[["kappa", "mu_mass_uncovered"]])
     miners = ["random", "bm25", "crossencoder", "ensemble"]
 
     # ---------- the floor sandwich, per miner ----------------------------
@@ -168,6 +176,8 @@ def main() -> None:
         h = float(ent.loc[m, "mean_entropy_nats"])
         pi = np.array([float(rb.loc[m, f"frac_{b}"]) for b in BINS])
         k, _ = kappa_tv(pi, MU["eval_top100"])
+        if fine is not None and m in fine.index:
+            k = float(fine.loc[m, "kappa"])          # finest partition
         bias = float("inf") if not np.isfinite(k) else 2.0 * (1.0 - 1.0 / k**2)
         row = {"miner": m, "floor": floor_upper(h), "kappa_eval": k,
                "bias_over_B": bias}
